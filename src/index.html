@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Import Holidays into EasyAppointments</title>
+  <style>
+    :root{--maxw:980px;--accent:#0b5;--muted:#666;}
+    *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Arial}
+    body{margin:0;display:flex;min-height:100vh;flex-direction:column;align-items:center;background:#f7f8fa}
+    header{width:100%;max-width:var(--maxw);padding:18px 12px;display:flex;justify-content:flex-end}
+    h1{margin:0;font-size:18px;text-align:right}
+    main{width:100%;max-width:var(--maxw);background:#fff;border-radius:8px;padding:18px;margin:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    label{font-size:13px;color:var(--muted)}
+    select,input[type=date],input[type=text]{padding:8px;border:1px solid #ddd;border-radius:6px;min-width:0}
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    button{padding:8px 12px;border-radius:6px;border:0;background:var(--accent);color:#003000;cursor:pointer}
+    button.secondary{background:#eee;color:#111}
+    footer{width:100%;max-width:var(--maxw);padding:12px;text-align:center;color:#666;font-size:13px}
+    .step{display:none}
+    .step.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .secondary{color:var(--muted);}
+    .test_connection{display:flex;gap:8px;align-items:center;margin-top:8px}
+    ul.no-bullets{list-style:none;margin:0;padding:0}
+    pre{background:#f3f3f3;padding:8px;border-radius:6px;overflow:auto}
+    @media (max-width:520px){header{padding:12px}h1{font-size:16px}}
+  </style>
+</head>
+<body>
+  <header><h1>Import Holidays into EasyAppointments</h1></header>
+  <main>
+    <div id="steps">
+      <div id="step-1" class="step active" data-step="1">
+        <h3>1 - Welcome</h3>
+        <p>This tool allows you to import holidays from OpenHolidaysAPI into EasyAppointments.</p>
+        <p>Steps:</p>
+        <ol>
+          <li>Choose country</li>
+          <li>Choose subdivision and language</li>
+          <li>Select date range</li>
+          <li>Provide EasyAppointments URL and API Bearer key</li>
+          <li>Load, review and select holidays and import</li>
+        </ol>
+      </div>
+      <div id="step-2" class="step" data-step="2">
+        <h3>2 - Country</h3>
+        <p class="muted">Choose your country of origin</p>
+        <div class="grid">
+          <div>
+            <label>Country</label>
+            <select id="country"></select>
+          </div>
+        </div>
+      </div>
+      <div id="step-3" class="step" data-step="3">
+        <h3>3 - Subdivision & Language</h3>
+        <p class="muted">Choose your subdivision and language</p>
+        <div class="grid">
+          <div>
+            <label>Subdivision</label>
+            <select id="subdivision"><option value="">Ignore</option></select>
+          </div>
+          <div>
+            <label>Language</label>
+            <select id="language"></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="step-4" class="step" data-step="4">
+        <h3>4 — Date range</h3>
+        <div class="row">
+          <div>
+            <label>From date</label>
+            <input type="date" id="date_from">
+          </div>
+          <div>
+            <label>To date</label>
+            <input type="date" id="date_to">
+          </div>
+        </div>
+        <p class="secondary">Times are set to 00:01 (from) and 23:59 (to) automatically.</p>
+      </div>
+
+      <div id="step-5" class="step" data-step="5">
+        <h3>5 — Destination (EasyAppointments)</h3>
+        <div class="grid">
+          <div>
+            <label>EasyAppointments base URL</label>
+            <input type="text" id="ea_url" placeholder="https://your.easyappointments.instance">
+          </div>
+          <div>
+            <label>API Bearer Key</label>
+            <input type="text" id="ea_key" placeholder="Place your API key here...">
+          </div>
+        </div>
+        <p class="secondary">The API Bearer Key is not sent to any server or third-party service. It is used locally in your browser to get and post data to the provided EasyAppointments instance.</p>
+        <div class="test_connection">
+          <button id="test_con2ea" class="secondary">Test connection</button>
+          <div id="test_result" class="secondary"></div>
+        </div>
+      </div>
+
+      <div id="step-6" class="step" data-step="6">
+        <h3>6 — Preview & Import</h3>
+        <div>
+          <button id="load_holidays" class="secondary">Load public holidays preview</button>
+        </div>
+        <div id="preview_public">Click the button to load the public holidays preview</div>
+        <div>
+          <button id="import_btn">Import to EasyAppointments</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="prev" class="secondary">Previous</button>
+      <button id="next">Next</button>
+    </div>
+  </main>
+
+  <footer>&copy; <span id="year"></span> <a href="https://github.com/cn-tools/importHolidaysIntoEasyAppointments" target="_blank" rel="noopener noreferrer">importHolidaysIntoEasyAppointments</a> by <a href="https://github.com/cn-tools" target="_blank" rel="noopener noreferrer">CN-Tools</a> — <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a></footer>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById('year').textContent=new Date().getFullYear();
+
+    document.getElementById('date_from').value=localStorage.getItem('date_from')||new Date().toISOString().split('T')[0];
+    document.getElementById('date_to').value=localStorage.getItem('date_to')||new Date(new Date().getFullYear(),11,31).toISOString().split('T')[0];
+    document.getElementById('ea_url').value=localStorage.getItem('ea_url')||'https://webhook.site/9cc1e0a2-9f28-4c4a-a543-9f68e410e53c';
+    document.getElementById('ea_key').value=localStorage.getItem('ea_key')||'9cc1e0a2-9f28-4c4a-a543-9f68e410e53c';
+
+/*
+    document.getElementById("country").addEventListener("change", function () {
+      localStorage.setItem("country", this.value);
+    });
+    document.getElementById("subdivision").addEventListener("change", function () {
+      localStorage.setItem("subdivision", this.value);
+    });
+*/
+    document.getElementById("date_from").addEventListener("change", function () {
+      localStorage.setItem("date_from", this.value);
+    });
+    document.getElementById("date_to").addEventListener("change", function () {
+      localStorage.setItem("date_to", this.value);
+    });
+    document.getElementById("ea_url").addEventListener("change", function () {
+      localStorage.setItem("ea_url", this.value);
+      document.getElementById("test_result").textContent = ""; // Clear test result when URL changes
+    });
+    document.getElementById("ea_key").addEventListener("change", function () {
+      localStorage.setItem("ea_key", this.value);
+      document.getElementById("test_result").textContent = ""; // Clear test result when key changes
+    });
+
+    const steps=[...document.querySelectorAll('.step')];
+    const officialLanguagesByCountry = {};
+    let cur=0;
+    function show(i){steps.forEach(s=>s.classList.toggle('active',+s.dataset.step===i+1));cur=i}
+    document.getElementById('next').onclick=()=>{if(cur<steps.length-1)show(cur+1)}
+    document.getElementById('prev').onclick=()=>{if(cur>0)show(cur-1)}
+
+    const browserLanguage = 'EN';//(((navigator.languages && navigator.languages[0]) || navigator.language || 'en-US').split(/[-_]/)[0] || 'en').toUpperCase();
+    const countrySel = document.getElementById('country');
+    const languageSel = document.getElementById('language');
+    const subdivisionSel = document.getElementById('subdivision');
+
+    /**
+     * Get the text for a given language from the data structure.
+     * @param {Array} data - The array of language entries.
+     * @param {string} isoCode - The ISO code of the country.
+     *
+     * @param {string} language - The desired language code.
+     * @returns {string} - The text in the desired language or an empty string if not found.
+     */
+    function getLanguageText(data, isoCode, language) {
+      const languageEntry = data.find(
+        item => item.isoCode.toUpperCase() === isoCode.toUpperCase()
+      );
+
+      if (!languageEntry) {
+        return "";
+      }
+
+      // search for the desired language
+      let translation = languageEntry.name.find(
+        item => item.language.toUpperCase() === language.toUpperCase()
+      );
+
+      // If not found, fallback to English
+      if (!translation) {
+        translation = languageEntry.name.find(
+          item => item.language.toUpperCase() === "EN"
+        );
+      }
+
+      return translation?.text || "";
+    }
+
+    /**
+     * Recursively add data attributes to an element based on the provided object.
+     * @param {HTMLElement} element - The HTML element to which data attributes will be added.
+     * @param {string} prefix - The prefix for the data attribute names.
+     * @param {Object|Array|string|number} value - The value to be added as data attributes. Can be an object, array, string, or number.
+     */
+    function addDataAttributes(element, prefix, value) {
+      if (Array.isArray(value)) {
+        // Use the first element for arrays
+        // (in your data, "name" contains only one object)
+        if (value.length === 1 && typeof value[0] === "object") {
+          addDataAttributes(element, prefix, value[0]);
+        } else {
+          element.dataset[prefix] = JSON.stringify(value);
+        }
+      } else if (value !== null && typeof value === "object") {
+        Object.entries(value).forEach(([key, val]) => {
+          addDataAttributes(element, `${prefix}${key.charAt(0).toUpperCase()}${key.slice(1)}`, val);
+        });
+      } else {
+        element.dataset[prefix] = String(value);
+      }
+    }
+
+    /**
+     * Load the list of countries from the OpenHolidaysAPI and populate the country select element.
+     */
+    async function loadCountries(){
+      try{
+        const url = new URL('https://openholidaysapi.org/Countries');
+
+        url.searchParams.set('languageIsoCode', browserLanguage);
+        const r = await fetch(url.toString(), {headers:{accept:'application/json'}});
+        if(!r.ok) throw new Error('Failed');
+        const list = await r.json();
+        list.sort((a, b) =>
+          (a.name?.[0]?.text || '').localeCompare(
+            b.name?.[0]?.text || '',
+            browserLanguage
+          )
+        );
+
+        countrySel.innerHTML = '<option value="">Choose...</option>';
+
+        list.forEach(c => {
+          // Build mapping isoCode -> officialLanguages
+          officialLanguagesByCountry[c.isoCode] = c.officialLanguages || [];
+
+          // Create option for country select
+          const o = document.createElement('option');
+          o.value = c.isoCode;
+
+          o.textContent =
+            c.name?.find(n => (n.language || '').toUpperCase() === browserLanguage)?.text ||
+            c.name?.[0]?.text ||
+            '';
+
+          countrySel.appendChild(o);
+        });
+
+        if(!countrySel.options.length){
+          countrySel.innerHTML='<option value="">Unable to load countries</option>';
+        }
+//        countrySel.value=localStorage.getItem('country')||'AT';
+        countrySel.onchange=()=>{
+          loadLanguages();
+          loadSubdivisions();
+          clearPreviewPublicHolidays();
+        };
+      }catch(e){
+        countrySel.innerHTML='<option value="">Unable to load countries</option>';
+        console.error('Error loading countries', e);
+      }
+    }
+    loadCountries();
+
+    /**
+     * Load the list of languages for the selected country and populate the language select element.
+     */
+    async function loadLanguages(){
+      const langSel = document.getElementById('language');
+      langSel.innerHTML = '<option value="">Loading...</option>';
+      try{
+        const url = new URL('https://openholidaysapi.org/Languages');
+
+        //url.searchParams.set('languageIsoCode', browserLanguage);
+        const r = await fetch(url.toString(), {headers:{accept:'application/json'}});
+        if(!r.ok) throw new Error('Failed');
+        const list = await r.json();
+
+        const countryIsoCode = countrySel.value;
+        const languages = officialLanguagesByCountry[countryIsoCode] || [];
+
+        //langSel.innerHTML = '<option value="">Choose...</option>';
+        langSel.innerHTML = '';
+
+        languages.forEach(lang => {
+          const o = document.createElement('option');
+          o.value = lang;
+          o.textContent = getLanguageText(list, lang, countryIsoCode) || lang;
+
+          langSel.appendChild(o);
+        });
+
+        if(!langSel.options.length){
+          langSel.innerHTML='<option value="">No languages</option>';
+        }
+        langSel.onchange=()=>{
+          clearPreviewPublicHolidays();
+        };
+      }catch(e){
+        langSel.innerHTML='<option value="">Unable to load languages</option>';
+        console.error('Error loading languages', e);
+      }
+    }
+
+    /**
+     * Load the list of subdivisions for the selected country and populate the subdivision select element.
+     */
+    async function loadSubdivisions(){
+      const subSel = document.getElementById('subdivision');
+      subSel.innerHTML = '<option value="">Loading...</option>';
+      try{
+        const url = new URL('https://openholidaysapi.org/Subdivisions');
+        const countryIsoCode = countrySel.value;
+        url.searchParams.set('countryIsoCode', countryIsoCode);
+        url.searchParams.set('languageIsoCode', browserLanguage);
+        const r = await fetch(url.toString(), {headers:{accept:'application/json'}});
+        if(!r.ok) throw new Error('Failed');
+        const list = await r.json();
+        list.sort((a, b) =>
+          (a.name?.[0]?.text || '').localeCompare(
+            b.name?.[0]?.text || '',
+            browserLanguage
+          )
+        );
+
+        subSel.innerHTML = '<option value="">Ignore</option>';
+
+        list.forEach(s => {
+          const o = document.createElement('option');
+          o.value = s.code;
+
+          o.textContent =
+            s.name?.find(n => (n.language || '').toUpperCase() === browserLanguage)?.text ||
+            s.name?.[0]?.text ||
+            '';
+
+          subSel.appendChild(o);
+        });
+
+        if(!subSel.options.length){
+          subSel.innerHTML='<option value="">No subdivisions</option>';
+        }
+//        subSel.value=localStorage.getItem('subdivision')||'AT-NÖ';
+        subSel.onchange=()=>{
+          clearPreviewPublicHolidays();
+        };
+      }catch(e){
+        subSel.innerHTML='<option value="">Unable to load subdivisions</option>';
+        console.error('Error loading subdivisions', e);
+      }
+    }
+
+    async function clearPreviewPublicHolidays() {
+      const previewPublic = document.getElementById("preview_public");
+      previewPublic.innerHTML = ""; // Clear previous content
+    }
+
+    /**
+     * Test the connection to EasyAppointments.
+     */
+    document.getElementById('test_con2ea').onclick=async ()=>{
+      const base=document.getElementById('ea_url').value.replace(/\/+$/,'');
+      const key=document.getElementById('ea_key').value;
+      const out=document.getElementById('test_result');
+      out.textContent='testing...';
+      try{
+        const url=base+'/index.php/api/v1/blocked_periods';
+        const r=await fetch(url,{method:'GET',headers:{'Authorization':'Bearer '+key}});
+
+        if (r.ok) {
+          out.textContent='Connection OK - URL: ' + url;
+          localStorage.setItem('ea_url', base);
+          localStorage.setItem('ea_key', key);
+        } else {
+          out.textContent='Connection failed ('+r.status+')';
+        }
+      }catch(e){
+        out.textContent='Connection error';
+        console.error('Error testing connection to EasyAppointments', e);
+      }
+    };
+
+    /**
+     * Load the preview of holidays for the selected date range.
+     */
+    document.getElementById('load_holidays').onclick=async ()=>{
+      const iso=countrySel.value;
+      const lang=languageSel?.value||undefined;
+      const sub=subdivisionSel?.value||undefined;
+      const from=document.getElementById('date_from').value;
+      const to=document.getElementById('date_to').value;
+      const previewPubilc = document.getElementById("preview_public");
+
+      if(!iso||!from||!to){previewPubilc.textContent='Select country and date range.';return}
+
+      previewPubilc.innerHTML = ""; // Clear previous content
+      previewPubilc.textContent = "loading...";
+
+      try{
+        const params=new URLSearchParams({countryIsoCode:iso,validFrom:from,validTo:to});
+        if(lang)params.append('languageIsoCode',lang);
+        if(sub)params.append('subdivisionCode',sub);
+        const url = 'https://openholidaysapi.org/PublicHolidays?'+params.toString();
+        const r=await fetch(url,{headers:{accept:'application/json'}});
+        if(!r.ok)throw new Error('Failed to load');
+        const data=await r.json();
+
+        previewPubilc.innerHTML = ""; // Clear previous content
+
+        const ul = document.createElement("ul");
+        ul.classList.add("no-bullets");
+        previewPubilc.appendChild(ul);
+
+        data.forEach(item => {
+          // create a new <li> element for each holiday
+          const li = document.createElement("li");
+
+          // Checkbox erzeugen
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.id = item.id;
+
+          Object.entries(item).forEach(([key, value]) => {
+            if (key === "id") return;
+            addDataAttributes(checkbox, key, value);
+          });
+
+          // create label for the checkbox
+          const label = document.createElement("label");
+          label.htmlFor = item.id;
+
+          // Text aus dem name-Array holen (DE-Eintrag)
+          //label.textContent = item.name.find(n => n.language === lang)?.text || "";
+          label.textContent = `${item.startDate} - ${
+            item.name.find(n => n.language === lang)?.text || ""
+          }`;
+
+          // add the checkbox and label to the <li>
+          li.appendChild(checkbox);
+          li.appendChild(label);
+
+          // add the <li> to the container
+          ul.appendChild(li);
+        });
+
+        previewPubilc.insertBefore(document.createElement("span"), previewPubilc.firstChild).textContent = "Select the public holidays you want to import:";
+
+        const buttonContainer = document.createElement("div");
+        buttonContainer.id = "previewPubilcButtons";
+
+        const btn_select_all = document.createElement("button");
+        btn_select_all.textContent = "Select All";
+        btn_select_all.classList.add("secondary");
+        btn_select_all.onclick = () => {
+          const checkboxes = previewPubilc.querySelectorAll("input[type='checkbox']");
+          checkboxes.forEach(cb => cb.checked = true);
+        };
+
+        const btn_deselect_all = document.createElement("button");
+        btn_deselect_all.textContent = "Deselect All";
+        btn_deselect_all.classList.add("secondary");
+        btn_deselect_all.onclick = () => {
+          const checkboxes = previewPubilc.querySelectorAll("input[type='checkbox']");
+          checkboxes.forEach(cb => cb.checked = false);
+        };
+
+        const btn_check_new = document.createElement("button");
+        btn_check_new.textContent = "Check New";
+        btn_check_new.classList.add("secondary");
+        btn_check_new.onclick = () => {
+          alert("This feature is not implemented yet. It would check which holidays are already in EasyAppointments and only select the new ones.");
+        };
+
+        buttonContainer.appendChild(btn_select_all);
+        buttonContainer.appendChild(btn_deselect_all);
+        buttonContainer.appendChild(btn_check_new);
+        previewPubilc.insertBefore(buttonContainer, previewPubilc.firstChild.nextSibling);
+      }catch(e){
+        previewPubilc.textContent='Error loading public holidays.';
+        console.error('Error loading holidays.', e);
+      }
+    };
+
+    document.getElementById('import_btn').onclick=async ()=>{
+      alert('Import functionality is currently disabled for safety. Please enable it in the code if you want to proceed.');
+    };
+  /*
+    // Import to EasyAppointments with duplicate check
+    document.getElementById('import_btn').onclick=async ()=>{
+      const base=document.getElementById('ea_url').value.replace(/\/+$/,'');const key=document.getElementById('ea_key').value;const preview=document.getElementById('preview');
+      if(!base||!key){alert('Provide EasyAppointments URL and key');return}
+      const pre=preview.querySelector('pre'); if(!pre){alert('Load preview first');return}
+      const lines=pre.textContent.split('\n').map(l=>l.trim()).filter(Boolean);
+      for(const line of lines){
+        const [datePart, ...rest]=line.split('—');const name=rest.join('—').trim();const date=datePart.trim();
+        const from=`${date} 00:01`;const to=`${date} 23:59`;
+        try{
+          // check duplicates: GET blocked_periods?date=...&text=...
+          const q=new URL(base+'/index.php/api/v1/blocked_periods');q.searchParams.set('date',date);q.searchParams.set('text',name);
+          const chk=await fetch(q.toString(),{headers:{'Authorization':'Bearer '+key}});
+          const exists=(chk.ok && (await chk.json()).length>0);
+          if(exists) continue;
+          // create
+          await fetch(base+'/index.php/api/v1/blocked_periods',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({from,to,text:name})});
+        }catch(e){console.error('import error',e)}
+      }
+      alert('Import finished');
+    };
+  */
+  });
+  </script>
+</body>
+</html>

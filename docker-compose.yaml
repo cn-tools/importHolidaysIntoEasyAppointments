@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "2804:80"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+    working_dir: /usr/share/nginx/html
+    restart: unless-stopped
