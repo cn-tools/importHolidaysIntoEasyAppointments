@@ -1,5 +1,7 @@
 # importHolidaysIntoEasyAppointments
 
+> ⚠️ **Notice**: This project is in active development and doesn't work well at the moment. Stay tuned for updates!
+
 A small web-based utility to import holiday data into the EasyAppointments scheduling system.
 
 ## Overview
