@@ -3,8 +3,8 @@ services:
   web:
     image: nginx:alpine
     ports:
-      - "2804:80"
+      - "32804:80"
     volumes:
-      - ./:/usr/share/nginx/html:ro
+      - ./src/:/usr/share/nginx/html:ro
     working_dir: /usr/share/nginx/html
     restart: unless-stopped

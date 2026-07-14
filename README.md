@@ -1,23 +1,31 @@
 # importHolidaysIntoEasyAppointments
 
-> ⚠️ **Notice**: This project is in active development and doesn't work well at the moment. Stay tuned for updates!
+> ⚠️ **Notice**: This project is in active development!
 
 A small web-based utility to import holiday data into the EasyAppointments scheduling system.
 
 ## Overview
 
-This project provides a simple frontend and backend to load holiday definitions and inject them into EasyAppointments.
+This project provides a simple frontend and backend to load holiday definitions and import them into your installed version of EasyAppointments as blocked periods.
 
 ## Features
 
 - Easy import of holiday entries into EasyAppointments
 - Web browser interface via `index.html`
 - Simple installation for local or XAMPP deployments
-- No third-party service or server involved
+- No third-party services or server involved
 
 ## Usage
 
 Use the hosted interface directly at [https://cn-tools.github.io/importHolidaysIntoEasyAppointments/](https://cn-tools.github.io/importHolidaysIntoEasyAppointments/) hosted by Github Pages.
+
+## CORS
+
+When using the hosted interface from GitHub Pages, CORS (Cross-Origin Resource Sharing) issues may occur when trying to communicate with your EasyAppointments installation. To resolve this:
+
+- Ensure your EasyAppointments server is accessible and properly configured to accept requests from the GitHub Pages domain
+- Consider running the application locally instead (clone the repository and open `index.html` locally)
+- Alternatively, deploy this tool on the same domain as your EasyAppointments installation to avoid CORS restrictions
 
 ---
 
@@ -25,7 +33,6 @@ Use the hosted interface directly at [https://cn-tools.github.io/importHolidaysI
 
 ### Requirements
 
-- PHP 7.4 or newer
 - EasyAppointments installation
 - Optional: Web server environment such as XAMPP, Apache, or Nginx
 
@@ -41,11 +48,6 @@ Use the hosted interface directly at [https://cn-tools.github.io/importHolidaysI
 2. Use the interface to select or define holiday entries.
 3. Submit the data to import holidays into EasyAppointments.
 4. Verify the inserted holidays in the EasyAppointments admin calendar.
-
-### File Structure
-
-- `index.html` - Web interface for importing holiday data.
-- `README.md` - This documentation.
 
 ### Notes
 

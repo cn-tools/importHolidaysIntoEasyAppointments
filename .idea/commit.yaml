@@ -1,0 +1,36 @@
+name: Minify src JS and CSS files
+
+on:
+  push:
+    paths:
+      - 'src/**'
+  pull_request:
+    paths:
+      - 'src/**'
+
+jobs:
+  minify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install minifiers
+        run: npm install terser csso --no-save
+      - name: Minify JS and CSS files
+        run: |
+          find src -type f \( \( -name '*.js' ! -name '*.min.js' \) -o \( -name '*.css' ! -name '*.min.css' \) \) | while IFS= read -r file; do
+            case "$file" in
+              *.js)
+                out="${file%.js}.min.js"
+                npx terser "$file" -c -m -o "$out"
+                ;;
+              *.css)
+                out="${file%.css}.min.css"
+                npx csso "$file" --output "$out"
+                ;;
+            esac
+          done

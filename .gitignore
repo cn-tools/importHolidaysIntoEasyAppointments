@@ -1,0 +1,13 @@
+# Common entries for PHP/XAMPP project, IDE, OS, vendor, node_modules, logs, env files, uploads, and other runtime artifacts
+.DS_Store
+Thumbs.db
+/.env
+.env.local
+.env.*.local
+.user.ini
+*.log
+logs/
+tmp/
+cache/
+/.sass-cache
+/.cache
