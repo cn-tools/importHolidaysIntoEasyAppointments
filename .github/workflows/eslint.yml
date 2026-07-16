@@ -39,7 +39,7 @@ jobs:
       - name: Run ESLint
         env:
           SARIF_ESLINT_IGNORE_SUPPRESSED: "true"
-        run: npx eslint . --config .eslintrc.json --ext .js,.jsx,.ts,.tsx,.html --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif || echo '{"version":"2.1.0","runs":[]}' > eslint-results.sarif
+        run: npx eslint . --config .eslintrc.json --ext .js,.jsx,.ts,.tsx,.html --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif || echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint","version":"8.10.0","informationUri":"https://eslint.org","rules":[]}},"results":[]}]}' > eslint-results.sarif
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
