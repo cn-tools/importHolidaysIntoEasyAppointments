@@ -11,12 +11,12 @@ name: ESLint
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: ["main"]
   schedule:
-    - cron: '25 8 * * 2'
+    - cron: "25 8 * * 2"
 
 jobs:
   eslint:
@@ -35,15 +35,31 @@ jobs:
           npm install eslint@8.10.0
           npm install @microsoft/eslint-formatter-sarif@3.1.0
           npm install eslint-plugin-html
-    
+
       - name: Run ESLint
+        id: eslint
         env:
           SARIF_ESLINT_IGNORE_SUPPRESSED: "true"
-        run: npx eslint . --config .eslintrc.json --ext .js,.jsx,.ts,.tsx,.html --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif || echo '{"version":"2.1.0","runs":[]}' > eslint-results.sarif
-        continue-on-error: true
+        run: |
+          set +e
+          npx eslint . --config .eslintrc.json --ext .js,.jsx,.ts,.tsx,.html --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+          eslint_exit_code=$?
+          set -e
+
+          if [ ! -s eslint-results.sarif ]; then
+            echo '{"version":"2.1.0","runs":[]}' > eslint-results.sarif
+          fi
+
+          if grep -q '"runs": *\[\]' eslint-results.sarif; then
+            echo "has_results=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_results=true" >> $GITHUB_OUTPUT
+          fi
+
+          exit 0
 
       - name: Upload analysis results to GitHub
-        if: hashFiles('eslint-results.sarif') != ''
+        if: steps.eslint.outputs.has_results == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: eslint-results.sarif
