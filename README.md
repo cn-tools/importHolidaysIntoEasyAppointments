@@ -44,7 +44,7 @@ When using the hosted interface from GitHub Pages, CORS (Cross-Origin Resource S
 
 ### Try
 
-1. Open `index.html` in your browser.
+1. Open `src/index.html` in your browser.
 2. Use the interface to select or define holiday entries.
 3. Submit the data to import holidays into EasyAppointments.
 4. Verify the inserted holidays in the EasyAppointments admin calendar.
