@@ -29,6 +29,7 @@
         --accent: #0b5;
         --muted: #666;
         --light: #e0e0e0;
+        --transition-speed: 0.4s;
       }
       * {
         box-sizing: border-box;
@@ -160,7 +161,7 @@
         }
       }
 
-      /* --- Fortschrittsbalken Styling --- */
+      /* --- Progress bar styling --- */
       .progress-wrapper {
         display: flex;
         justify-content: space-between;
@@ -168,7 +169,7 @@
         margin-bottom: 40px;
       }
 
-      /* Graue Hintergrundlinie */
+      /* Light line in the background */
       .progress-wrapper::before {
         content: "";
         background-color: var(--light);
@@ -181,7 +182,7 @@
         z-index: 1;
       }
 
-      /* Blaue, dynamische Fortschrittslinie */
+      /* Green dynamic progress line */
       .progress-line {
         background-color: var(--accent);
         position: absolute;
@@ -189,7 +190,7 @@
         left: 0;
         transform: translateY(-50%);
         height: 4px;
-        width: 0%; /* Wird via JS berechnet */
+        width: 0%; /* Calculated via JS */
         z-index: 2;
         transition: width var(--transition-speed) ease;
       }
@@ -201,7 +202,7 @@
         z-index: 3; /* Liegt über den Linien */
       }
 
-      /* Einzelne Kreise */
+      /* Individual circles */
       .step-circle {
         background-color: #fff;
         color: #999;
