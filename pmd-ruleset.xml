@@ -15,7 +15,7 @@
 
     <!-- HTML -->
     <rule ref="category/html/bestpractices.xml"/>
-    <rule ref="category/html/accessibility.xml"/>
+    <!-- <rule ref="category/html/accessibility.xml"/> --> <!-- REMOVED - not available in PMD 7.26.0 -->
     <rule ref="category/html/security.xml"/>
     <rule ref="category/html/codestyle.xml"/>
 
