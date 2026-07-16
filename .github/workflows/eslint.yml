@@ -48,4 +48,4 @@ jobs:
         with:
           sarif_file: eslint-results.sarif
           category: eslint
-          wait-for-processing: true
+          wait-for-processing: false
