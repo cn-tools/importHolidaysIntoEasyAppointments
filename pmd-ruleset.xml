@@ -13,6 +13,16 @@
 
     <include-pattern>.*/src/.*</include-pattern>
 
+    <!-- HTML -->
+    <rule ref="category/html/bestpractices.xml"/>
+    <rule ref="category/html/accessibility.xml"/>
+    <rule ref="category/html/security.xml"/>
     <rule ref="category/html/codestyle.xml"/>
+
+    <!-- JavaScript -->
+    <rule ref="category/ecmascript/errorprone.xml"/>
+    <rule ref="category/ecmascript/bestpractices.xml"/>
+    <rule ref="category/ecmascript/security.xml"/>
+    <rule ref="category/ecmascript/design.xml"/>
 
 </ruleset>
