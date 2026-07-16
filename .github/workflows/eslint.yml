@@ -43,8 +43,9 @@ jobs:
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
+        if: hashFiles('eslint-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: eslint-results.sarif
-          category: eslint
+          category: eslint-${{ github.run_id }}
           wait-for-processing: true
