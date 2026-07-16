@@ -40,8 +40,9 @@ jobs:
             -   name: Set up Java
                 uses: actions/setup-java@v4
                 with:
-                    java-version: '17'
+                    java-version: '21'
                     distribution: 'temurin'
+                    cache: 'maven'
             -   name: Run Analysis
                 uses: codescan-io/codescan-scanner-action@5b2e8c5683ef6a5adc8fa3b7950bb07debccce12
                 with:
