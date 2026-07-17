@@ -527,9 +527,9 @@
          * @returns {boolean} - Returns true if the step is valid, false otherwise.
          */
         function validateStep(stepId) {
-          let errorMessage = "";
           switch (stepId) {
-            case "step-2":
+            case "step-2": {
+              let errorMessage = "";
               if (
                 !validateTermsOfUse(termsOfUseQuestions, tosCheckboxMapping)
               ) {
@@ -541,7 +541,9 @@
                 return false;
               }
               break;
-            case "step-3":
+            }
+            case "step-3": {
+              let errorMessage = "";
               const eaUrl = document.getElementById("ea_url").value.trim();
               const eaKey = document.getElementById("ea_key").value.trim();
 
@@ -564,7 +566,9 @@
                 return false;
               }
               break;
-            case "step-4":
+            }
+            case "step-4": {
+              let errorMessage = "";
               if (!countrySel.value) {
                 errorMessage += "Country selection is required.\n";
               }
@@ -573,7 +577,9 @@
                 return false;
               }
               break;
+            }
             case "step-6": {
+              let errorMessage = "";
               const from = document.getElementById("date_from").value;
               const to = document.getElementById("date_to").value;
 
@@ -595,10 +601,10 @@
             case "step-7": {
               doStartImportData();
               return false;
-              break;
             }
-            default:
+            default: {
               return true;
+            }
           }
           return true;
         }
@@ -1577,7 +1583,9 @@
           try {
             const d = new Date(holiday.dataset.startDate);
             if (!isNaN(d)) year = d.getFullYear();
-          } catch (e) {}
+          } catch (e) {
+            console.log("no start date found:", e);
+          }
           if (!year && typeof holiday.dataset.startDate === "string") {
             // fallback: take first 4 chars (YYYY...)
             year = holiday.dataset.startDate.slice(0, 4);
