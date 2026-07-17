@@ -7,7 +7,7 @@ The following versions of this project are currently supported with security upd
 | Version | Supported |
 |---------|-----------|
 | Latest release | ✅ |
-| Previous major release | ✅ |
+| Previous major release | ❌ |
 | Older releases | ❌ |
 
 If you are using an unsupported version, please upgrade to a supported release before reporting issues.
