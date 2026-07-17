@@ -28,6 +28,8 @@
         --maxw: 980px;
         --accent: #0b5;
         --muted: #666;
+        --light: #e0e0e0;
+        --transition-speed: 0.4s;
       }
       * {
         box-sizing: border-box;
@@ -158,11 +160,82 @@
           font-size: 16px;
         }
       }
+
+      /* --- Progress bar styling --- */
+      .progress-wrapper {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 40px;
+      }
+
+      /* Light line in the background */
+      .progress-wrapper::before {
+        content: "";
+        background-color: var(--light);
+        position: absolute;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        height: 4px;
+        width: 100%;
+        z-index: 1;
+      }
+
+      /* Green dynamic progress line */
+      .progress-line {
+        background-color: var(--accent);
+        position: absolute;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        height: 4px;
+        width: 0%; /* Calculated via JS */
+        z-index: 2;
+        transition: width var(--transition-speed) ease;
+      }
+
+      .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        z-index: 3; /* Liegt über den Linien */
+      }
+
+      /* Individual circles */
+      .step-circle {
+        background-color: #fff;
+        color: #999;
+        border-radius: 50%;
+        height: 35px;
+        width: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--light);
+        font-weight: bold;
+        transition: all var(--transition-speed) ease;
+      }
+
+      .step-circle.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .step-circle.completed {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
     </style>
   </head>
   <body>
     <header><h1>Import Holidays into EasyAppointments</h1></header>
     <main>
+      <div class="progress-wrapper">
+        <div class="progress-line" id="progress-line"></div>
+        <div class="progress-steps" id="progress-steps"></div>
+      </div>
       <div id="steps">
         <div id="step-1" class="step active" data-step="1">
           <h2>1 - Welcome</h2>
@@ -186,7 +259,7 @@
           <p>
             Import automatically public holidays directly into your
             EasyAppointments installation in seconds. No more manually creating
-            holidays – simply select the country, enter your API credentials,
+            holidays - simply select the country, enter your API credentials,
             and import.
           </p>
           <p>You will be guided through the process step by step.</p>
@@ -198,7 +271,7 @@
             data are stored or processed on external servers.
           </p>
           <h3>Getting Started</h3>
-          <ol>
+          <ul>
             <li>Review and accept the Terms of Use</li>
             <li>Enter your EasyAppointments URL and API Bearer Token</li>
             <li>Select the country whose public holidays you want to import</li>
@@ -208,7 +281,7 @@
               Load the holidays, review the results, select the entries to
               import, and start the import
             </li>
-          </ol>
+          </ul>
         </div>
         <div id="step-2" class="step" data-step="2">
           <h2>2 — Terms of Use</h2>
@@ -534,8 +607,49 @@
         const btnNext = document.getElementById("next");
         const btnPrev = document.getElementById("prev");
         const officialLanguagesByCountry = {};
-        let cur = 0;
-        let activeStep = null;
+        let currentStep = 0;
+
+        const progressStepsContainer =
+          document.getElementById("progress-steps");
+        const progressLine = document.getElementById("progress-line");
+
+        // Dynamically generate circles in the DOM (based on the number of HTML steps)
+        steps.forEach((_, index) => {
+          const circle = document.createElement("div");
+          circle.classList.add("step-circle");
+          circle.innerText = index + 1;
+          if (index === currentStep) circle.classList.add("active");
+          progressStepsContainer.appendChild(circle);
+        });
+
+        const circles = document.querySelectorAll(".step-circle");
+
+        /**
+         * Updates the visual state of the progress indicator.
+         *
+         * - Marks previous steps as completed.
+         * - Highlights the current step as active.
+         * - Resets upcoming steps to inactive.
+         * - Adjusts the progress line width based on the current step.
+         */
+        function updateProgressSteps() {
+          // Update the status of the progress circles (active, completed, inactive).
+          circles.forEach((circle, index) => {
+            if (index < currentStep) {
+              circle.classList.add("completed");
+              circle.classList.remove("active");
+            } else if (index === currentStep) {
+              circle.classList.add("active");
+              circle.classList.remove("completed");
+            } else {
+              circle.classList.remove("active", "completed");
+            }
+          });
+
+          // Calculate the width of the progress line
+          const progressPercent = (currentStep / (steps.length - 1)) * 100;
+          progressLine.style.width = progressPercent + "%";
+        }
 
         /**
          * Displays the specified step in the workflow and updates
@@ -553,32 +667,34 @@
           steps.forEach((s) =>
             s.classList.toggle("active", +s.dataset.step === i + 1),
           );
-          cur = i;
+          currentStep = i;
 
-          if (cur === 0) {
+          if (currentStep === 0) {
             btnNext.textContent = "Start";
             btnNext.classList.remove("hide");
             btnPrev.classList.add("hide");
-          } else if (cur === 6) {
+          } else if (currentStep === 6) {
             btnNext.textContent = "Start data import";
-          } else if (cur === 7) {
+          } else if (currentStep === 7) {
             btnNext.classList.add("hide");
             btnPrev.classList.add("hide");
           } else {
             btnNext.textContent = "Next";
             btnPrev.classList.remove("hide");
           }
+
+          updateProgressSteps();
         }
         btnNext.onclick = () => {
-          if (cur < steps.length - 1) {
-            const currentStep = steps[cur];
-            if (validateStep(currentStep.id)) {
-              activateStep(cur + 1);
+          if (currentStep < steps.length - 1) {
+            const step = steps[currentStep];
+            if (validateStep(step.id)) {
+              activateStep(currentStep + 1);
             }
           }
         };
         btnPrev.onclick = () => {
-          if (cur > 0) activateStep(cur - 1);
+          if (currentStep > 0) activateStep(currentStep - 1);
         };
         document.getElementById("back2start").onclick = () => {
           resetPreviewPublicHolidays();
@@ -1236,14 +1352,14 @@
             // Overlay erstellen
             const overlay = document.createElement("div");
             overlay.style.cssText = `
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0,0,0,0.5);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 9999;
-                  `;
+                        position: fixed;
+                        inset: 0;
+                        background: rgba(0,0,0,0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                      `;
 
             // Dialog erstellen
             const dialog = document.createElement("div");
@@ -1253,26 +1369,26 @@
             dialog.setAttribute("aria-describedby", "dlgDescription");
 
             dialog.style.cssText = `
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    min-width: 300px;
-                    text-align: center;
-                  `;
+              background: white;
+              padding: 20px;
+              border-radius: 8px;
+              min-width: 300px;
+              text-align: center;
+            `;
 
             dialog.innerHTML = `
-                    <h3 id="dlgTitle">Confirm Holiday Import</h2>
+              <h3 id="dlgTitle">Confirm Holiday Import</h2>
 
-                    <div id="dlgDescription">
-                      <p>The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.</p>
-                      <p>Appointments cannot be scheduled during these blocked periods.</p>
-                      <p><strong>Warning:</strong> Once imported, this operation cannot be reverted automatically.</p>
-                      <p>Are you sure you want to import?</p>
-                    </div>
+              <div id="dlgDescription">
+                <p>The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.</p>
+                <p>Appointments cannot be scheduled during these blocked periods.</p>
+                <p><strong>Warning:</strong> Once imported, this operation cannot be reverted automatically.</p>
+                <p>Are you sure you want to import?</p>
+              </div>
 
-                    <button type="button" id="dlgImport">Import</button>
-                    <button type="button" id="dlgCancel">Cancel</button>
-                  `;
+              <button type="button" id="dlgImport">Import</button>
+              <button type="button" id="dlgCancel">Cancel</button>
+            `;
 
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
