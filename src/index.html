@@ -23,6 +23,537 @@
 
     <title>Import Holidays into EasyAppointments</title>
 
+    <script>
+      const tosCheckboxMapping = {};
+      const termsOfUseQuestions = {
+        tou1: {
+          text: "I have read all questions and understand that this checkbox must remain unchecked.",
+          user_answer: false,
+        },
+        tou2: {
+          text: "I understand that this tool is provided as-is without any warranty.",
+          user_answer: true,
+        },
+        tou3: {
+          text: "I have made a backup of my EasyAppointments data before using this tool.",
+          user_answer: true,
+        },
+        tou4: {
+          text: "I understand that using this tool may result in data loss or corruption if not used correctly.",
+          user_answer: true,
+        },
+        tou5: {
+          text: "I understand that the developers of this tool are not responsible for any issues that arise from its use.",
+          user_answer: true,
+        },
+        tou6: {
+          text: "I understand that I should test this tool in a safe environment before using it in production.",
+          user_answer: true,
+        },
+      };
+
+      /**
+       * Recursively add data attributes to an element based on the provided object.
+       * @param {HTMLElement} element - The HTML element to which data attributes will be added.
+       * @param {string} prefix - The prefix for the data attribute names.
+       * @param {Object|Array|string|number} value - The value to be added as data attributes. Can be an object, array, string, or number.
+       */
+      function addDataAttributes(element, prefix, value) {
+        if (Array.isArray(value)) {
+          // Use the first element for arrays
+          // (in your data, "name" contains only one object)
+          if (value.length === 1 && typeof value[0] === "object") {
+            addDataAttributes(element, prefix, value[0]);
+          } else {
+            element.dataset[prefix] = JSON.stringify(value);
+          }
+        } else if (value !== null && typeof value === "object") {
+          Object.entries(value).forEach(([key, val]) => {
+            addDataAttributes(
+              element,
+              `${prefix}${key.charAt(0).toUpperCase()}${key.slice(1)}`,
+              val,
+            );
+          });
+        } else if (prefix === "startDate") {
+          element.dataset[prefix] = value + " 00:01";
+        } else if (prefix === "endDate") {
+          element.dataset[prefix] = value + " 23:59";
+        } else {
+          element.dataset[prefix] = String(value);
+        }
+      }
+
+      /**
+       * Check for a new version of the tool by fetching version information from GitHub.
+       * If a new version is available, display a notification in the footer.
+       */
+      async function checkForNewVersion() {
+        try {
+          const response = await fetch(
+            "https://api.github.com/repos/cn-tools/importHolidaysIntoEasyAppointments/releases/latest",
+            { cache: "no-store" },
+          );
+          if (!response.ok) throw new Error("Failed to fetch version info");
+          const releaseInfos = await response.json();
+          const currentVersion = "{{current_version_number}}"; // Replace with your current version
+          if (
+            releaseInfos.tag_name &&
+            releaseInfos.tag_name !== currentVersion
+          ) {
+            console.log("New version found: ", releaseInfos.tag_name);
+            document
+              .getElementById("newversionavailable")
+              .classList.remove("hide");
+          }
+        } catch (error) {
+          console.error("Error checking for new version:", error);
+        }
+      }
+
+      /**
+       * Convert the attributes of an input element into an <openHolidayApi ... /> tag.
+       * @param {string} elementId - The ID of the input element.
+       * @returns {string|false} - Returns the <openHolidayApi ... /> tag as a string, or false if the element is not found.
+       */
+      function convertInputToOpenHolidayApiTag(elementId) {
+        const input = document.getElementById(elementId);
+
+        if (!input) {
+          return false;
+        }
+
+        const attributes = [];
+
+        // add the id attribute to the attributes array
+        attributes.push(`id="${input.id}"`);
+
+        // Add all data-* attributes to the attributes array
+        for (const attr of input.attributes) {
+          if (attr.name.startsWith("data-")) {
+            const name = attr.name.substring(5); // "data-" entfernen
+            attributes.push(`${name}="${attr.value}"`);
+          }
+        }
+
+        // Add the imported timestamp attribute to the attributes array
+        attributes.push(`imported="${new Date().toISOString()}"`);
+
+        return `<openHolidayApi ${attributes.join(" ")} />`;
+      }
+
+      /**
+       * Create checkboxes for the Terms of Use questions and append them to the specified container.
+       * @param {Object} questions - An object containing the questions and their user answers.
+       * @param {string} containerId - The ID of the container where the checkboxes will be appended.
+       */
+      function createTermsOfUseCheckboxes(questions, containerId) {
+        const container = document.getElementById(containerId);
+
+        // Objekt in Array umwandeln
+        const entries = Object.entries(questions);
+
+        // Fisher-Yates Shuffle (cryptographically secure)
+        for (let i = entries.length - 1; i > 0; i--) {
+          const randomValue =
+            crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+          const j = Math.floor(randomValue * (i + 1));
+          [entries[i], entries[j]] = [entries[j], entries[i]];
+        }
+
+        // Container leeren
+        container.innerHTML = "";
+
+        // Checkboxen erzeugen
+        entries.forEach(([key, question]) => {
+          const randomId = `tou_${crypto.randomUUID()}`;
+          tosCheckboxMapping[key] = randomId;
+
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("checkbox-item");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.id = randomId;
+          checkbox.name = randomId;
+          checkbox.checked = false; // Initialize to false
+
+          const label = document.createElement("label");
+          label.htmlFor = randomId;
+          label.textContent = question.text;
+
+          wrapper.appendChild(checkbox);
+          wrapper.appendChild(label);
+          container.appendChild(wrapper);
+        });
+      }
+
+      /**
+       * Fetch data from the EasyAppointments API using the provided path and query parameters.
+       * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
+       * @param {Object} [queryParams={}] - An object containing query parameters as key-value pairs.
+       * @returns {Promise<Response>} - A promise that resolves to the fetch response.
+       */
+      async function getEasyAppointmentsData(
+        eaUrlObj,
+        eaKeyObj,
+        path,
+        queryParams = {},
+      ) {
+        try {
+          if (
+            queryParams !== undefined &&
+            (typeof queryParams !== "object" ||
+              queryParams === null ||
+              Array.isArray(queryParams))
+          ) {
+            throw new Error("Invalid query parameters");
+          }
+
+          const baseUrl = getEAapiURL(eaUrlObj.value);
+          const authKey = eaKeyObj.value;
+          const url = new URL(path, baseUrl);
+          Object.entries(queryParams).forEach(([key, value]) => {
+            url.searchParams.set(key, value);
+          });
+
+          const r = await fetch(url, {
+            method: "GET",
+            headers: { Authorization: "Bearer " + authKey },
+          });
+          if (!r.ok)
+            throw new Error("Failed to fetch data from EasyAppointments");
+          return r;
+        } catch (error) {
+          console.error("Error fetching data from EasyAppointments:", error);
+          throw error;
+        }
+      }
+
+      /**
+       * Normalizes a URL by removing leading/trailing whitespace
+       * and trimming any trailing forward slashes.
+       *
+       * @param {string} url - The URL to normalize.
+       * @returns {string} The normalized URL without trailing slashes.
+       */
+      function getEAurl(url) {
+        let baseUrl = url.trim();
+        while (baseUrl.endsWith("/")) {
+          baseUrl = baseUrl.slice(0, -1);
+        }
+        return baseUrl;
+      }
+
+      /**
+       * Builds and returns the EasyAPIs base endpoint URL.
+       *
+       * This function derives the base URL from the provided URL and appends
+       * the API v1 path (`/index.php/api/v1/`).
+       *
+       * @param {string} url - The source URL used to determine the application base URL.
+       * @returns {string} The complete EasyAPIs v1 endpoint URL.
+       */
+      function getEAapiURL(url) {
+        let baseUrl = getEAurl(url);
+        baseUrl += "/index.php/api/v1/";
+
+        return baseUrl;
+      }
+
+      /**
+       * Get a formatted holiday name with its year from the holiday object.
+       * @param {Object} holiday - The holiday object containing nameText and startDate.
+       * @returns {string} - Returns the formatted holiday name with year, or a default message if the holiday name is not available.
+       */
+      function getFormattedHolidayName(holiday) {
+        if (!holiday) return "Holiday name not available";
+
+        const text = holiday.dataset.nameText || "Holiday";
+
+        // extract year from startDate
+        let year = "";
+        try {
+          const d = new Date(holiday.dataset.startDate);
+          if (!Number.isNaN(d.getTime())) {
+            year = d.getFullYear();
+          }
+        } catch (e) {
+          console.log("no start date found:", e);
+        }
+        if (!year && typeof holiday.dataset.startDate === "string") {
+          // fallback: take first 4 chars (YYYY...)
+          year = holiday.dataset.startDate.slice(0, 4);
+        }
+
+        return text + " " + year;
+      }
+
+      /**
+       * Get the text for a given language from the data structure.
+       * @param {Array} data - The array of language entries.
+       * @param {string} isoCode - The ISO code of the country.
+       *
+       * @param {string} language - The desired language code.
+       * @returns {string} - The text in the desired language or an empty string if not found.
+       */
+      function getLanguageText(data, isoCode, language) {
+        const languageEntry = data.find(
+          (item) => item.isoCode.toUpperCase() === isoCode.toUpperCase(),
+        );
+
+        if (!languageEntry) {
+          return "";
+        }
+
+        // search for the desired language
+        let translation = languageEntry.name.find(
+          (item) => item.language.toUpperCase() === language.toUpperCase(),
+        );
+
+        // If not found, fallback to English
+        if (!translation) {
+          translation = languageEntry.name.find(
+            (item) => item.language.toUpperCase() === "EN",
+          );
+        }
+
+        return translation?.text || "";
+      }
+
+      /**
+       * Check if at least one holiday is selected for import.
+       * @returns {boolean} - Returns true if at least one checkbox is checked, false otherwise.
+       */
+      function minimumOneDateSelected() {
+        const previewPublic = document.getElementById("preview_public");
+        const checkboxes = previewPublic.querySelectorAll(
+          "input[type='checkbox']",
+        );
+        return Array.from(checkboxes).some((cb) => cb.checked);
+      }
+
+      /**
+       * Parse the first <openHolidayApi ... /> tag from the provided content and extract its attributes.
+       * @param {string} content - The HTML content to parse.
+       * @returns {Object|false} Returns an object with the attributes of the first <openHolidayApi> tag, or false if not found.
+       */
+      function parseFirstOpenHolidayApiTag(content) {
+        // HTML-Entities dekodieren, falls der Tag als Text gespeichert wurde
+        content = content
+          .replaceAll("&lt;", "<")
+          .replaceAll("&gt;", ">")
+          .trim();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "text/html");
+
+        const element = doc.querySelector("openHolidayApi");
+
+        if (!element) {
+          return false;
+        }
+
+        const result = {};
+
+        for (const attr of element.attributes) {
+          result[attr.name] = attr.value;
+        }
+
+        return result;
+      }
+
+      /**
+       * Post data to the EasyAppointments API using the provided path, authorization key, and request body.
+       * @param {string} eaURL - the base URL of EasyAppointments
+       * @param {string} eaAuthKey - Bearer key for EasyAppointments
+       * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
+       * @param {string} authKey - The API Bearer Key for authorization.
+       * @param {Object} [body={}] - An object containing the request body to be sent as JSON.
+       * @returns {Promise<Response>} - A promise that resolves to the fetch response.
+       */
+      async function postEasyAppointmentsData(
+        eaApiURL,
+        eaAuthKey,
+        path,
+        body = {},
+      ) {
+        try {
+          if (!body.name || !body.start || !body.end) {
+            throw new Error("Missing required fields");
+          }
+
+          if (!eaAuthKey.trim()) {
+            throw new Error("Missing API key");
+          }
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+
+          const url = new URL(path, eaApiURL);
+          const r = await fetch(url, {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              Authorization: "Bearer " + eaAuthKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+
+          clearTimeout(timeout);
+
+          if (!r.ok) {
+            const text = await r.text();
+
+            throw new Error(`EasyAppointments returned ${r.status}: ${text}`);
+          }
+
+          return r;
+        } catch (error) {
+          console.error("Error posting data to EasyAppointments:", error);
+          throw error;
+        }
+      }
+
+      /**
+       * Reset the preview of public holidays to its initial state.
+       */
+      function resetPreviewPublicHolidays() {
+        const previewPublic = document.getElementById("preview_public");
+        previewPublic.innerHTML = ""; // Clear previous content
+        previewPublic.textContent =
+          "Click the button to load the public holidays preview";
+      }
+
+      /**
+       * Resets all checkboxes within the Terms of Use container.
+       * @returns {void}
+       */
+      function resetTermsOfUse() {
+        const container = document.getElementById("termsofuse");
+        const checkboxes = container.querySelectorAll("input[type='checkbox']");
+        checkboxes.forEach((cb) => (cb.checked = false));
+      }
+
+      /**
+       * Displays an error message in an alert dialog.
+       *
+       * @param {string} message - The message to display.
+       * @returns {boolean} Returns false when a message is displayed, otherwise true.
+       */
+      function showError(message) {
+        if (message) {
+          alert(message);
+          return false;
+        }
+        return true;
+      }
+
+      /**
+       * Validates the Terms of Use step.
+       * @returns {boolean} True if validation succeeds; otherwise false.
+       */
+      function validateStep2() {
+        if (!validateTermsOfUse(termsOfUseQuestions, tosCheckboxMapping)) {
+          return showError(
+            "Please answer all Terms of Use questions correctly.",
+          );
+        }
+
+        return true;
+      }
+
+      /**
+       * Validates EasyAppointments connection settings.
+       * @returns {boolean} True if validation succeeds; otherwise false.
+       */
+      function validateStep3(eaUrlObj, eaKeyObj) {
+        const errors = [];
+
+        const eaUrl = eaUrlObj.value.trim();
+        const eaKey = eaKeyObj.value.trim();
+
+        if (!eaUrl) {
+          errors.push("EasyAppointments URL is required.");
+        }
+
+        if (!eaKey) {
+          errors.push("API Bearer Key is required.");
+        }
+
+        const connectionTestState = Number.parseInt(
+          localStorage.getItem("connectionTestState"),
+          10,
+        );
+
+        if (!errors.length && connectionTestState !== 1) {
+          testEasyAppointmentsConnection();
+
+          errors.push(
+            "Please test the connection to EasyAppointments and ensure it is successful.",
+          );
+        }
+
+        return showError(errors.join("\n"));
+      }
+
+      /**
+       * Validates the country selection step.
+       * @returns {boolean} True if validation succeeds; otherwise false.
+       */
+      function validateStep4(countrySel) {
+        return showError(
+          !countrySel.value ? "Country selection is required." : "",
+        );
+      }
+
+      /**
+       * Validates the date range selection step.
+       * @returns {boolean} True if validation succeeds; otherwise false.
+       */
+      function validateStep6(from, to) {
+        const errors = [];
+
+        if (!from) {
+          errors.push("From date is required.");
+        }
+
+        if (!to) {
+          errors.push("To date is required.");
+        }
+
+        if (from && to && from > to) {
+          errors.push("From date cannot be later than To date.");
+        }
+
+        return showError(errors.join("\n"));
+      }
+
+      /**
+       * Validate the user's answers to the Terms of Use questions against the expected answers.
+       * @param {Object} questions - An object containing the questions and their expected user answers.
+       * @param {Object} mapping - An object mapping question keys to their corresponding checkbox IDs.
+       * @returns {boolean} - Returns true if all answers are correct, false otherwise.
+       */
+      function validateTermsOfUse(questions, mapping) {
+        for (const [questionKey, question] of Object.entries(questions)) {
+          const checkboxId = mapping[questionKey];
+          const checkbox = document.getElementById(checkboxId);
+
+          if (!checkbox) {
+            return false;
+          }
+
+          if (checkbox.checked !== question.user_answer) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+    </script>
+
     <style>
       :root {
         --maxw: 980px;
@@ -205,7 +736,7 @@
       /* Individual circles */
       .step-circle {
         background-color: #fff;
-        color: #999;
+        color: #333;
         border-radius: 50%;
         height: 35px;
         width: 35px;
@@ -289,35 +820,49 @@
         </div>
         <div id="step-3" class="step" data-step="3">
           <h2>3 — Destination (EasyAppointments)</h2>
+          <p>
+            To establish the connection, please enter the
+            <strong>URL</strong> and <strong>API Key</strong> in the
+            corresponding fields. Once both values have been provided, click
+            <strong>"Test Connection"</strong> to verify that the connection can
+            be established successfully.
+          </p>
+          <p>
+            If the test is successful, the system will confirm that the
+            configuration is valid and ready for use. If the connection test
+            fails, please review the entered URL and API Key and try again.
+          </p>
           <div class="grid">
             <div>
               <label for="ea_url">EasyAppointments base URL</label>
               <input
-                type="text"
+                type="url"
                 id="ea_url"
                 placeholder="https://your.easyappointments.instance"
+                required
               />
             </div>
             <div>
               <label for="ea_key">API Bearer Key</label>
               <input
-                type="text"
+                type="password"
                 id="ea_key"
                 placeholder="Place your API key here..."
+                required
               />
             </div>
           </div>
-          <p class="secondary">
-            The API Bearer Key is not sent to any server or third-party service.
-            It is used locally in your browser to get and post data to the
-            provided EasyAppointments instance.
-          </p>
           <div class="test_connection">
             <button type="button" id="test_con2ea" class="secondary">
               Test connection
             </button>
             <div id="test_result" class="secondary"></div>
           </div>
+          <p class="secondary">
+            <strong>Notice:</strong> The API Bearer Key is not sent to any
+            server or third-party service. It is used locally in your browser to
+            get and post data to the provided EasyAppointments instance.
+          </p>
         </div>
         <div id="step-4" class="step" data-step="4">
           <h2>4 - Country</h2>
@@ -368,11 +913,17 @@
               Load public holidays preview
             </button>
           </div>
-          <div id="preview_public"></div>
+          <div id="preview_public">
+            Click the button to load the public holidays preview
+          </div>
         </div>
         <div id="step-8" class="step" data-step="8">
           <h2>8 — Finished</h2>
-          <p>The import was successfully completed.</p>
+          <p>
+            The import was <span id="msg_successfully"></span>completed.<br />
+            <span id="success_imported"></span> holidays imported,
+            <span id="failed_imported"></span> failed.
+          </p>
 
           <p id="import-summary" class="muted">
             <strong>Brief summary:</strong>
@@ -453,6 +1004,13 @@
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("connectionTestState", -1);
+
+        const eaUrlObj = document.getElementById("ea_url");
+        const eaKeyObj = document.getElementById("ea_key");
+
+        eaUrlObj.value = localStorage.getItem("ea_url") || "";
+        eaKeyObj.value = localStorage.getItem("ea_key") || "";
+
         document.getElementById("date_from").value =
           localStorage.getItem("date_from") ||
           new Date().toISOString().split("T")[0];
@@ -461,39 +1019,6 @@
           new Date(new Date().getFullYear(), 11, 31)
             .toISOString()
             .split("T")[0];
-        document.getElementById("ea_url").value =
-          localStorage.getItem("ea_url") || "";
-        document.getElementById("ea_key").value =
-          localStorage.getItem("ea_key") || "";
-
-        const tosCheckboxMapping = {};
-        const termsOfUseQuestions = {
-          tou1: {
-            text: "I have read all questions and understand that this checkbox must remain unchecked.",
-            user_answer: false,
-          },
-          tou2: {
-            text: "I understand that this tool is provided as-is without any warranty.",
-            user_answer: true,
-          },
-          tou3: {
-            text: "I have made a backup of my EasyAppointments data before using this tool.",
-            user_answer: true,
-          },
-          tou4: {
-            text: "I understand that using this tool may result in data loss or corruption if not used correctly.",
-            user_answer: true,
-          },
-          tou5: {
-            text: "I understand that the developers of this tool are not responsible for any issues that arise from its use.",
-            user_answer: true,
-          },
-          tou6: {
-            text: "I understand that I should test this tool in a safe environment before using it in production.",
-            user_answer: true,
-          },
-        };
-
         document
           .getElementById("date_from")
           .addEventListener("change", function () {
@@ -506,108 +1031,16 @@
             localStorage.setItem("date_to", this.value);
             resetPreviewPublicHolidays();
           });
-        document
-          .getElementById("ea_url")
-          .addEventListener("change", function () {
-            localStorage.setItem("ea_url", this.value);
-            document.getElementById("test_result").textContent = ""; // Clear test result when URL changes
-            localStorage.setItem("connectionTestState", -1);
-          });
-        document
-          .getElementById("ea_key")
-          .addEventListener("change", function () {
-            localStorage.setItem("ea_key", this.value);
-            document.getElementById("test_result").textContent = ""; // Clear test result when key changes
-            localStorage.setItem("connectionTestState", -1);
-          });
-
-        /**
-         * Validate the current step based on its ID.
-         * @param {string} stepId - The ID of the current step.
-         * @returns {boolean} - Returns true if the step is valid, false otherwise.
-         */
-        function validateStep(stepId) {
-          switch (stepId) {
-            case "step-2": {
-              let errorMessage = "";
-              if (
-                !validateTermsOfUse(termsOfUseQuestions, tosCheckboxMapping)
-              ) {
-                errorMessage +=
-                  "Please answer all Terms of Use questions correctly.\n";
-              }
-              if (errorMessage) {
-                alert(errorMessage);
-                return false;
-              }
-              break;
-            }
-            case "step-3": {
-              let errorMessage = "";
-              const eaUrl = document.getElementById("ea_url").value.trim();
-              const eaKey = document.getElementById("ea_key").value.trim();
-
-              if (!eaUrl) {
-                errorMessage += "EasyAppointments URL is required.\n";
-              }
-              if (!eaKey) {
-                errorMessage += "API Bearer Key is required.\n";
-              }
-
-              if (
-                !errorMessage &&
-                parseInt(localStorage.getItem("connectionTestState")) !== 1
-              ) {
-                errorMessage +=
-                  "Please test the connection to EasyAppointments and ensure it is successful.\n";
-              }
-              if (errorMessage) {
-                alert(errorMessage);
-                return false;
-              }
-              break;
-            }
-            case "step-4": {
-              let errorMessage = "";
-              if (!countrySel.value) {
-                errorMessage += "Country selection is required.\n";
-              }
-              if (errorMessage) {
-                alert(errorMessage);
-                return false;
-              }
-              break;
-            }
-            case "step-6": {
-              let errorMessage = "";
-              const from = document.getElementById("date_from").value;
-              const to = document.getElementById("date_to").value;
-
-              if (!from) {
-                errorMessage += "From date is required.\n";
-              }
-              if (!to) {
-                errorMessage += "To date is required.\n";
-              }
-              if (from && to && from > to) {
-                errorMessage += "From date cannot be later than To date.\n";
-              }
-              if (errorMessage) {
-                alert(errorMessage);
-                return false;
-              }
-              break;
-            }
-            case "step-7": {
-              doStartImportData();
-              return false;
-            }
-            default: {
-              return true;
-            }
-          }
-          return true;
-        }
+        eaUrlObj.addEventListener("change", function () {
+          localStorage.setItem("ea_url", this.value);
+          document.getElementById("test_result").textContent = ""; // Clear test result when URL changes
+          localStorage.setItem("connectionTestState", -1);
+        });
+        eaKeyObj.addEventListener("change", function () {
+          localStorage.setItem("ea_key", this.value);
+          document.getElementById("test_result").textContent = ""; // Clear test result when key changes
+          localStorage.setItem("connectionTestState", -1);
+        });
 
         const steps = [...document.querySelectorAll(".step")];
         const btnNext = document.getElementById("next");
@@ -629,6 +1062,64 @@
         });
 
         const circles = document.querySelectorAll(".step-circle");
+
+        btnNext.onclick = () => {
+          if (currentStep < steps.length - 1) {
+            const step = steps[currentStep];
+            if (validateStep(step.id)) {
+              activateStep(currentStep + 1);
+            }
+          }
+        };
+        btnPrev.onclick = () => {
+          if (currentStep > 0) activateStep(currentStep - 1);
+        };
+        document.getElementById("back2start").onclick = () => {
+          resetPreviewPublicHolidays();
+          resetTermsOfUse();
+          activateStep(0);
+        };
+
+        const browserLanguage = "EN"; //(((navigator.languages && navigator.languages[0]) || navigator.language || 'en-US').split(/[-_]/)[0] || 'en').toUpperCase();
+        const countrySel = document.getElementById("country");
+        const languageSel = document.getElementById("language");
+        const subdivisionSel = document.getElementById("subdivision");
+
+        createTermsOfUseCheckboxes(termsOfUseQuestions, "termsofuse");
+        checkForNewVersion();
+        // resetPreviewPublicHolidays();
+
+        /**
+         * Validate the current step based on its ID.
+         * @param {string} stepId - The ID of the current step.
+         * @returns {boolean} - Returns true if the step is valid, false otherwise.
+         */
+        function validateStep(stepId) {
+          switch (stepId) {
+            case "step-2": {
+              return validateStep2();
+            }
+            case "step-3": {
+              return validateStep3(eaUrlObj, eaKeyObj);
+            }
+            case "step-4": {
+              return validateStep4(countrySel);
+            }
+            case "step-6": {
+              return validateStep6(
+                document.getElementById("date_from").value,
+                document.getElementById("date_to").value,
+              );
+            }
+            case "step-7": {
+              doStartImportData();
+              return false;
+            }
+            default: {
+              return true;
+            }
+          }
+        }
 
         /**
          * Updates the visual state of the progress indicator.
@@ -690,173 +1181,6 @@
           }
 
           updateProgressSteps();
-        }
-        btnNext.onclick = () => {
-          if (currentStep < steps.length - 1) {
-            const step = steps[currentStep];
-            if (validateStep(step.id)) {
-              activateStep(currentStep + 1);
-            }
-          }
-        };
-        btnPrev.onclick = () => {
-          if (currentStep > 0) activateStep(currentStep - 1);
-        };
-        document.getElementById("back2start").onclick = () => {
-          resetPreviewPublicHolidays();
-          resetTermsOfUse();
-          activateStep(0);
-        };
-
-        const browserLanguage = "EN"; //(((navigator.languages && navigator.languages[0]) || navigator.language || 'en-US').split(/[-_]/)[0] || 'en').toUpperCase();
-        const countrySel = document.getElementById("country");
-        const languageSel = document.getElementById("language");
-        const subdivisionSel = document.getElementById("subdivision");
-
-        /**
-         * Create checkboxes for the Terms of Use questions and append them to the specified container.
-         * @param {Object} questions - An object containing the questions and their user answers.
-         * @param {string} containerId - The ID of the container where the checkboxes will be appended.
-         */
-        function createTermsOfUseCheckboxes(questions, containerId) {
-          const container = document.getElementById(containerId);
-
-          // Objekt in Array umwandeln
-          const entries = Object.entries(questions);
-
-          // Fisher-Yates Shuffle (cryptographically secure)
-          for (let i = entries.length - 1; i > 0; i--) {
-            const randomValue =
-              crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
-            const j = Math.floor(randomValue * (i + 1));
-            [entries[i], entries[j]] = [entries[j], entries[i]];
-          }
-
-          // Container leeren
-          container.innerHTML = "";
-
-          // Checkboxen erzeugen
-          entries.forEach(([key, question]) => {
-            const randomId = `tou_${crypto.randomUUID()}`;
-            tosCheckboxMapping[key] = randomId;
-
-            const wrapper = document.createElement("div");
-            wrapper.classList.add("checkbox-item");
-
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.id = randomId;
-            checkbox.name = randomId;
-            checkbox.checked = false; // Initialize to false
-
-            const label = document.createElement("label");
-            label.htmlFor = randomId;
-            label.textContent = question.text;
-
-            wrapper.appendChild(checkbox);
-            wrapper.appendChild(label);
-            container.appendChild(wrapper);
-          });
-        }
-
-        /**
-         * Resets all checkboxes within the Terms of Use container.
-         * @returns {void}
-         */
-        function resetTermsOfUse() {
-          const container = document.getElementById("termsofuse");
-          const checkboxes = container.querySelectorAll(
-            "input[type='checkbox']",
-          );
-          checkboxes.forEach((cb) => (cb.checked = false));
-        }
-
-        /**
-         * Validate the user's answers to the Terms of Use questions against the expected answers.
-         * @param {Object} questions - An object containing the questions and their expected user answers.
-         * @param {Object} mapping - An object mapping question keys to their corresponding checkbox IDs.
-         * @returns {boolean} - Returns true if all answers are correct, false otherwise.
-         */
-        function validateTermsOfUse(questions, mapping) {
-          for (const [questionKey, question] of Object.entries(questions)) {
-            const checkboxId = mapping[questionKey];
-            const checkbox = document.getElementById(checkboxId);
-
-            if (!checkbox) {
-              return false;
-            }
-
-            if (checkbox.checked !== question.user_answer) {
-              return false;
-            }
-          }
-
-          return true;
-        }
-        createTermsOfUseCheckboxes(termsOfUseQuestions, "termsofuse");
-
-        /**
-         * Get the text for a given language from the data structure.
-         * @param {Array} data - The array of language entries.
-         * @param {string} isoCode - The ISO code of the country.
-         *
-         * @param {string} language - The desired language code.
-         * @returns {string} - The text in the desired language or an empty string if not found.
-         */
-        function getLanguageText(data, isoCode, language) {
-          const languageEntry = data.find(
-            (item) => item.isoCode.toUpperCase() === isoCode.toUpperCase(),
-          );
-
-          if (!languageEntry) {
-            return "";
-          }
-
-          // search for the desired language
-          let translation = languageEntry.name.find(
-            (item) => item.language.toUpperCase() === language.toUpperCase(),
-          );
-
-          // If not found, fallback to English
-          if (!translation) {
-            translation = languageEntry.name.find(
-              (item) => item.language.toUpperCase() === "EN",
-            );
-          }
-
-          return translation?.text || "";
-        }
-
-        /**
-         * Recursively add data attributes to an element based on the provided object.
-         * @param {HTMLElement} element - The HTML element to which data attributes will be added.
-         * @param {string} prefix - The prefix for the data attribute names.
-         * @param {Object|Array|string|number} value - The value to be added as data attributes. Can be an object, array, string, or number.
-         */
-        function addDataAttributes(element, prefix, value) {
-          if (Array.isArray(value)) {
-            // Use the first element for arrays
-            // (in your data, "name" contains only one object)
-            if (value.length === 1 && typeof value[0] === "object") {
-              addDataAttributes(element, prefix, value[0]);
-            } else {
-              element.dataset[prefix] = JSON.stringify(value);
-            }
-          } else if (value !== null && typeof value === "object") {
-            Object.entries(value).forEach(([key, val]) => {
-              addDataAttributes(
-                element,
-                `${prefix}${key.charAt(0).toUpperCase()}${key.slice(1)}`,
-                val,
-              );
-            });
-          } else if (prefix === "startDate") {
-            element.dataset[prefix] = value + " 00:01";
-          } else if (prefix === "endDate") {
-            element.dataset[prefix] = value + " 23:59";
-          } else {
-            element.dataset[prefix] = String(value);
-          }
         }
 
         /**
@@ -1033,117 +1357,27 @@
         }
 
         /**
-         * Fetch data from the EasyAppointments API using the provided path and query parameters.
-         * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
-         * @param {Object} [queryParams={}] - An object containing query parameters as key-value pairs.
-         * @returns {Promise<Response>} - A promise that resolves to the fetch response.
-         */
-        async function getEasyAppointmentsData(path, queryParams = {}) {
-          try {
-            if (
-              queryParams !== undefined &&
-              (typeof queryParams !== "object" ||
-                queryParams === null ||
-                Array.isArray(queryParams))
-            ) {
-              throw new Error("Invalid query parameters");
-            }
-
-            const baseUrl =
-              document
-                .getElementById("ea_url")
-                .value.trim()
-                .replace(/\/+$/, "") + "/index.php/api/v1/";
-            const authKey = document.getElementById("ea_key").value;
-            const url = new URL(path, baseUrl);
-            Object.entries(queryParams).forEach(([key, value]) => {
-              url.searchParams.set(key, value);
-            });
-
-            const r = await fetch(url, {
-              method: "GET",
-              headers: { Authorization: "Bearer " + authKey },
-            });
-            if (!r.ok)
-              throw new Error("Failed to fetch data from EasyAppointments");
-            return r;
-          } catch (error) {
-            console.error("Error fetching data from EasyAppointments:", error);
-            throw error;
-          }
-        }
-
-        /**
-         * Post data to the EasyAppointments API using the provided path, authorization key, and request body.
-         * @param {string} eaURL - the base URL of EasyAppointments
-         * @param {string} eaAuthKey - Bearer key for EasyAppointments
-         * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
-         * @param {string} authKey - The API Bearer Key for authorization.
-         * @param {Object} [body={}] - An object containing the request body to be sent as JSON.
-         * @returns {Promise<Response>} - A promise that resolves to the fetch response.
-         */
-        async function postEasyAppointmentsData(
-          eaURL,
-          eaAuthKey,
-          path,
-          body = {},
-        ) {
-          try {
-            if (!body.name || !body.start || !body.end) {
-              throw new Error("Missing required fields");
-            }
-
-            const baseUrl =
-              eaURL.trim().replace(/\/+$/, "") + "/index.php/api/v1/";
-            if (!eaAuthKey.trim()) {
-              throw new Error("Missing API key");
-            }
-
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-
-            const url = new URL(path, baseUrl);
-            const r = await fetch(url, {
-              method: "POST",
-              signal: controller.signal,
-              headers: {
-                Authorization: "Bearer " + eaAuthKey,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(body),
-            });
-
-            clearTimeout(timeout);
-
-            if (!r.ok) {
-              const text = await r.text();
-
-              throw new Error(`EasyAppointments returned ${r.status}: ${text}`);
-            }
-
-            return r;
-          } catch (error) {
-            console.error("Error posting data to EasyAppointments:", error);
-            throw error;
-          }
-        }
-
-        /**
          * Test the connection to EasyAppointments.
          */
         document.getElementById("test_con2ea").onclick = async () => {
           localStorage.setItem("connectionTestState", -1);
-          const base = document
-            .getElementById("ea_url")
-            .value.replace(/\/+$/, "");
-          const key = document.getElementById("ea_key").value;
+          const base = eaUrlObj.value.trim();
+          const key = eaKeyObj.value;
           const out = document.getElementById("test_result");
 
           out.textContent = "testing...";
           try {
-            const r = await getEasyAppointmentsData("blocked_periods", {
-              length: 1,
-            });
+            btnNext.disabled = true;
+            btnPrev.disabled = true;
+
+            const r = await getEasyAppointmentsData(
+              eaUrlObj,
+              eaKeyObj,
+              "blocked_periods",
+              {
+                length: 1,
+              },
+            );
             localStorage.setItem("connectionTestState", r.ok ? "1" : "0");
 
             if (r.ok) {
@@ -1157,6 +1391,9 @@
             localStorage.setItem("connectionTestState", "-1");
             out.textContent = "Connection error";
             console.error("Error testing connection to EasyAppointments", e);
+          } finally {
+            btnNext.disabled = false;
+            btnPrev.disabled = false;
           }
         };
 
@@ -1271,21 +1508,23 @@
             btn_select_missing.classList.add("secondary");
             btn_select_missing.onclick = async () => {
               try {
-                const r = await getEasyAppointmentsData("blocked_periods", {
-                  length: 1000,
-                  sort: "start",
-                  from: from,
-                  till: to,
-                });
+                const r = await getEasyAppointmentsData(
+                  eaUrlObj,
+                  eaKeyObj,
+                  "blocked_periods",
+                  {
+                    length: 1000,
+                    sort: "start",
+                    from: from,
+                    till: to,
+                  },
+                );
                 const existingBlockedPeriods = await r.json();
 
                 btn_select_all.click(); // Select all first
 
                 existingBlockedPeriods.forEach((bp) => {
-                  const notesTag = parseFirstOpenHolidayApiTag(
-                    bp.notes ||
-                      '<openHolidayApi id="7ac1b0bc-b055-4ab2-8475-bb7372df3209" text="dummy" from="2026-01-01" till="06-01-2026" />',
-                  );
+                  const notesTag = parseFirstOpenHolidayApiTag(bp.notes || "");
                   if (notesTag && notesTag.id !== "") {
                     const checkbox = previewPubilc.querySelector(
                       `input[type='checkbox'][id='${notesTag.id}']`,
@@ -1316,34 +1555,6 @@
             console.error("Error loading holidays.", e);
           }
         };
-
-        /**
-         * Check for a new version of the tool by fetching version information from GitHub.
-         * If a new version is available, display a notification in the footer.
-         */
-        async function checkForNewVersion() {
-          try {
-            const response = await fetch(
-              "https://api.github.com/repos/cn-tools/importHolidaysIntoEasyAppointments/releases/latest",
-              { cache: "no-store" },
-            );
-            if (!response.ok) throw new Error("Failed to fetch version info");
-            const releaseInfos = await response.json();
-            const currentVersion = "{{current_version_number}}"; // Replace with your current version
-            if (
-              releaseInfos.tag_name &&
-              releaseInfos.tag_name !== currentVersion
-            ) {
-              console.log("New version found: ", releaseInfos.tag_name);
-              document
-                .getElementById("newversionavailable")
-                .classList.remove("hide");
-            }
-          } catch (error) {
-            console.error("Error checking for new version:", error);
-          }
-        }
-        checkForNewVersion();
 
         /**
          * Show a confirmation dialog before proceeding with the import.
@@ -1490,113 +1701,6 @@
         }
 
         /**
-         * Check if at least one holiday is selected for import.
-         * @returns {boolean} - Returns true if at least one checkbox is checked, false otherwise.
-         */
-        function minimumOneDateSelected() {
-          const previewPublic = document.getElementById("preview_public");
-          const checkboxes = previewPublic.querySelectorAll(
-            "input[type='checkbox']",
-          );
-          return Array.from(checkboxes).some((cb) => cb.checked);
-        }
-
-        /**
-         * Parse the first <openHolidayApi ... /> tag from the provided content and extract its attributes.
-         * @param {string} content - The HTML content to parse.
-         * @returns {Object|false} Returns an object with the attributes of the first <openHolidayApi> tag, or false if not found.
-         */
-        function parseFirstOpenHolidayApiTag(content) {
-          // HTML-Entities dekodieren, falls der Tag als Text gespeichert wurde
-          content = content.replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
-
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(content, "text/html");
-
-          const element = doc.querySelector("openHolidayApi");
-
-          if (!element) {
-            return false;
-          }
-
-          const result = {};
-
-          for (const attr of element.attributes) {
-            result[attr.name] = attr.value;
-          }
-
-          return result;
-        }
-
-        /**
-         * Convert the attributes of an input element into an <openHolidayApi ... /> tag.
-         * @param {string} elementId - The ID of the input element.
-         * @returns {string|false} - Returns the <openHolidayApi ... /> tag as a string, or false if the element is not found.
-         */
-        function convertInputToOpenHolidayApiTag(elementId) {
-          const input = document.getElementById(elementId);
-
-          if (!input) {
-            return false;
-          }
-
-          const attributes = [];
-
-          // add the id attribute to the attributes array
-          attributes.push(`id="${input.id}"`);
-
-          // Add all data-* attributes to the attributes array
-          for (const attr of input.attributes) {
-            if (attr.name.startsWith("data-")) {
-              const name = attr.name.substring(5); // "data-" entfernen
-              attributes.push(`${name}="${attr.value}"`);
-            }
-          }
-
-          // Add the imported timestamp attribute to the attributes array
-          attributes.push(`imported="${new Date().toISOString()}"`);
-
-          return `<openHolidayApi ${attributes.join(" ")} />`;
-        }
-
-        /**
-         * Reset the preview of public holidays to its initial state.
-         */
-        function resetPreviewPublicHolidays() {
-          const previewPublic = document.getElementById("preview_public");
-          previewPublic.innerHTML = ""; // Clear previous content
-          previewPublic.textContent =
-            "Click the button to load the public holidays preview";
-        }
-        resetPreviewPublicHolidays();
-
-        /**
-         * Get a formatted holiday name with its year from the holiday object.
-         * @param {Object} holiday - The holiday object containing nameText and startDate.
-         * @returns {string} - Returns the formatted holiday name with year, or a default message if the holiday name is not available.
-         */
-        function getFormattedHolidayName(holiday) {
-          if (!holiday) return "Holiday name not available";
-
-          const text = holiday.dataset.nameText || "Holiday";
-
-          // extract year from startDate
-          let year = "";
-          try {
-            const d = new Date(holiday.dataset.startDate);
-            if (!isNaN(d)) year = d.getFullYear();
-          } catch (e) {
-            console.log("no start date found:", e);
-          }
-          if (!year && typeof holiday.dataset.startDate === "string") {
-            // fallback: take first 4 chars (YYYY...)
-            year = holiday.dataset.startDate.slice(0, 4);
-          }
-
-          return text + " " + year;
-        }
-
-        /**
          * Handle the import button click event.
          * Validates that at least one holiday is selected, shows the import confirmation dialog,
          * and posts each selected holiday to EasyAppointments.
@@ -1622,8 +1726,8 @@
               (cb) => cb.checked,
             );
 
-            const eaURL = document.getElementById("ea_url").value;
-            const eaAuthKey = document.getElementById("ea_key").value;
+            const eaApiURL = getEAapiURL(eaUrlObj.value);
+            const eaAuthKey = eaKeyObj.value;
 
             const requests = selectedHolidays.map((cb) => {
               if (!cb.dataset.startDate || !cb.dataset.endDate) {
@@ -1638,7 +1742,7 @@
               };
 
               return postEasyAppointmentsData(
-                eaURL,
+                eaApiURL,
                 eaAuthKey,
                 "blocked_periods",
                 body,
@@ -1650,9 +1754,13 @@
               const success = results.filter((r) => r.status === "fulfilled");
               const failed = results.filter((r) => r.status === "rejected");
 
-              alert(
-                `${success.length} holidays imported, ${failed.length} failed`,
-              );
+              document.getElementById("msg_successfully").textContent =
+                failed.length === 0 ? "successfully " : "";
+
+              document.getElementById("success_imported").textContent =
+                success.length;
+              document.getElementById("failed_imported").textContent =
+                failed.length;
 
               // The import was successfull, so we are going to the tab finished
               activateStep(steps.length - 1);
