@@ -180,8 +180,12 @@
 
           const label = document.createElement("label");
           label.htmlFor = randomId;
-          label.textContent = question.text;
 
+          const span = document.createElement("span");
+          span.classList.add("checkbox-text");
+          span.textContent = question.text;
+
+          label.appendChild(span);
           wrapper.appendChild(checkbox);
           wrapper.appendChild(label);
           container.appendChild(wrapper);
@@ -545,6 +549,23 @@
         --muted: #666;
         --light: #e0e0e0;
         --transition-speed: 0.4s;
+        --cbx_transition-speed: 0.2s;
+        --cbx_border: rgba(0, 187, 85, 0.925);
+
+        --field-bg: #ffffff;
+        --field-radius: 8px;
+        --field-border: var(--light);
+        --field-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        --field-shadow-hover: 0 4px 12px var(--cbx_border);
+        --field-padding: 8px 12px;
+        --field-focus-outline: 3px solid var(--cbx_border);
+        --field-focus-scale: 1.01;
+
+        --btn-radius: 8px;
+        --btn-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        --btn-shadow-hover: 0 4px 12px var(--cbx_border);
+        --btn-padding: 8px 16px;
+        --btn-focus-outline: 3px solid var(--cbx_border);
       }
       * {
         box-sizing: border-box;
@@ -605,18 +626,6 @@
         gap: 8px;
         justify-content: flex-end;
         margin-top: 12px;
-      }
-      button {
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 0;
-        background: var(--accent);
-        color: #003000;
-        cursor: pointer;
-      }
-      button.secondary {
-        background: #eee;
-        color: #111;
       }
       footer {
         width: 100%;
@@ -741,6 +750,219 @@
         background-color: var(--accent);
         border-color: var(--accent);
         color: #fff;
+      }
+
+      /* Terms of use - Container */
+      #termsofuse {
+        margin: 1rem 0;
+      }
+
+      /* Einzelne TOU Checkbox */
+      #termsofuse .checkbox-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+
+      #termsofuse .checkbox-item:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Native Checkbox ausblenden */
+      #termsofuse .checkbox-item input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Label */
+      #termsofuse .checkbox-item label {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 24px;
+        padding-left: 38px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--muted);
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE/Edge Legacy */
+        user-select: none; /* Standard */
+      }
+
+      /* Text */
+      #termsofuse .checkbox-item .checkbox-text {
+        line-height: 1.7;
+      }
+
+      /* Checkbox-Grundform */
+      #termsofuse .checkbox-item label::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 24px;
+        height: 24px;
+        transform: translateY(-50%) scale(1);
+        border: 2px solid var(--light);
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        transition: all var(--cbx_transition) ease;
+      }
+
+      /* Haken */
+      #termsofuse .checkbox-item label::after {
+        content: "";
+        position: absolute;
+        left: 9px;
+        top: 50%;
+        width: 6px;
+        height: 12px;
+        border: solid #ffffff;
+        border-width: 0 3px 3px 0;
+        transform: translateY(-60%) rotate(45deg) scale(0);
+        transition: transform var(--cbx_transition) ease;
+      }
+
+      /* Hover */
+      #termsofuse .checkbox-item label:hover::before {
+        border-color: var(--accent);
+        box-shadow: 0 4px 12px var(--cbx_border);
+      }
+
+      /* Aktiv */
+      #termsofuse
+        .checkbox-item
+        input[type="checkbox"]:checked
+        + label::before {
+        background: linear-gradient(135deg, var(--light), var(--accent));
+        border-color: transparent;
+        transform: translateY(-50%) scale(1.05);
+      }
+
+      /* Haken anzeigen */
+      #termsofuse .checkbox-item input[type="checkbox"]:checked + label::after {
+        transform: translateY(-60%) rotate(45deg) scale(1);
+      }
+
+      /* Fokus für Tastaturnavigation */
+      #termsofuse .checkbox-item input[type="checkbox"]:focus + label::before {
+        outline: 3px solid var(--cbx_border);
+        outline-offset: 2px;
+      }
+
+      /* Optional: Textfarbe bei aktivierter Checkbox */
+      #termsofuse .checkbox-item input[type="checkbox"]:checked + label {
+        color: var(--muted);
+      }
+
+      /*-- design for input[date, url, password] and select --*/
+      select,
+      input[type="date"],
+      input[type="url"],
+      input[type="password"] {
+        padding: var(--field-padding);
+        border: 2px solid var(--field-border);
+        border-radius: var(--field-radius);
+        background: var(--field-bg);
+        color: #333;
+        box-shadow: var(--field-shadow);
+        transition: all var(--cbx_transition-speed) ease;
+        outline: none;
+      }
+
+      /* Hover */
+      select:hover,
+      input[type="date"]:hover,
+      input[type="url"]:hover,
+      input[type="password"]:hover {
+        border-color: var(--accent);
+        box-shadow: var(--field-shadow-hover);
+      }
+
+      /* Fokus */
+      select:focus,
+      input[type="date"]:focus,
+      input[type="url"]:focus,
+      input[type="password"]:focus {
+        border-color: var(--accent);
+        outline: var(--field-focus-outline);
+        outline-offset: 2px;
+        transform: scale(var(--field-focus-scale));
+      }
+
+      /* Gefüllte Felder */
+      select:not(:placeholder-shown),
+      input[type="url"]:not(:placeholder-shown),
+      input[type="password"]:not(:placeholder-shown),
+      input[type="date"]:valid {
+        border-color: rgba(0, 187, 85, 0.35);
+      }
+
+      /* Disabled */
+      select:disabled,
+      input[type="date"]:disabled,
+      input[type="url"]:disabled,
+      input[type="password"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: #f5f5f5;
+      }
+
+      /*-- design for buttons --*/
+      button {
+        padding: var(--btn-padding);
+        border-radius: var(--btn-radius);
+        border: 2px solid transparent;
+        background: var(--accent);
+        color: #003000;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: var(--btn-shadow);
+        transition: all var(--cbx_transition-speed) ease;
+      }
+
+      /* Hover */
+      button:hover {
+        box-shadow: var(--btn-shadow-hover);
+        transform: translateY(-1px) scale(1.02);
+      }
+
+      /* Active */
+      button:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      /* Focus */
+      button:focus-visible {
+        outline: var(--btn-focus-outline);
+        outline-offset: 2px;
+      }
+
+      /* Secondary */
+      button.secondary {
+        background: #ffffff;
+        border: 2px solid var(--field-border);
+        color: var(--muted);
+        box-shadow: var(--btn-shadow);
+      }
+
+      button.secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: var(--btn-shadow-hover);
+      }
+
+      /* Disabled */
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
     </style>
   </head>
