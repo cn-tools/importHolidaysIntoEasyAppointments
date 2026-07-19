@@ -451,24 +451,10 @@
       }
 
       /**
-       * Validates the Terms of Use step.
-       * @returns {boolean} True if validation succeeds; otherwise false.
-       */
-      function validateStep2() {
-        if (!validateTermsOfUse(termsOfUseQuestions, tosCheckboxMapping)) {
-          return showError(
-            "Please answer all Terms of Use questions correctly.",
-          );
-        }
-
-        return true;
-      }
-
-      /**
        * Validates EasyAppointments connection settings.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateStep3(eaUrlObj, eaKeyObj) {
+      function validateEAconnectionData(eaUrlObj, eaKeyObj) {
         const errors = [];
 
         const eaUrl = eaUrlObj.value.trim();
@@ -502,7 +488,7 @@
        * Validates the country selection step.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateStep4(countrySel) {
+      function validateCountry(countrySel) {
         return showError(
           !countrySel.value ? "Country selection is required." : "",
         );
@@ -512,7 +498,7 @@
        * Validates the date range selection step.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateStep6(from, to) {
+      function validateDates(from, to) {
         const errors = [];
 
         if (!from) {
@@ -541,12 +527,10 @@
           const checkboxId = mapping[questionKey];
           const checkbox = document.getElementById(checkboxId);
 
-          if (!checkbox) {
-            return false;
-          }
-
-          if (checkbox.checked !== question.user_answer) {
-            return false;
+          if (!checkbox || checkbox.checked !== question.user_answer) {
+            return showError(
+              "Please answer all Terms of Use questions correctly.",
+            );
           }
         }
 
@@ -768,7 +752,7 @@
         <div class="progress-steps" id="progress-steps"></div>
       </div>
       <div id="steps">
-        <div id="step-1" class="step active" data-step="1">
+        <div id="step-start" class="step active" data-step="1">
           <h2>1 - Welcome</h2>
           <p>
             This tool allows you to import holidays with data from
@@ -814,11 +798,11 @@
             </li>
           </ul>
         </div>
-        <div id="step-2" class="step" data-step="2">
+        <div id="step-tou" class="step" data-step="2">
           <h2>2 — Terms of Use</h2>
           <div id="termsofuse"></div>
         </div>
-        <div id="step-3" class="step" data-step="3">
+        <div id="step-eadata" class="step" data-step="3">
           <h2>3 — Destination (EasyAppointments)</h2>
           <p>
             To establish the connection, please enter the
@@ -864,7 +848,7 @@
             get and post data to the provided EasyAppointments instance.
           </p>
         </div>
-        <div id="step-4" class="step" data-step="4">
+        <div id="step-country" class="step" data-step="4">
           <h2>4 - Country</h2>
           <p class="muted">Choose your country of origin</p>
           <div class="grid">
@@ -874,7 +858,7 @@
             </div>
           </div>
         </div>
-        <div id="step-5" class="step" data-step="5">
+        <div id="step-subdiv-lang" class="step" data-step="5">
           <h2>5 - Subdivision & Language</h2>
           <p class="muted">Choose your subdivision and language</p>
           <div class="grid">
@@ -890,7 +874,7 @@
             </div>
           </div>
         </div>
-        <div id="step-6" class="step" data-step="6">
+        <div id="step-dates" class="step" data-step="6">
           <h2>6 — Date range</h2>
           <div class="row">
             <div>
@@ -906,7 +890,7 @@
             Times are set to 00:01 (from) and 23:59 (to) automatically.
           </p>
         </div>
-        <div id="step-7" class="step" data-step="7">
+        <div id="step-preview" class="step" data-step="7">
           <h2>7 — Preview & Import</h2>
           <div>
             <button type="button" id="load_holidays" class="secondary">
@@ -917,7 +901,7 @@
             Click the button to load the public holidays preview
           </div>
         </div>
-        <div id="step-8" class="step" data-step="8">
+        <div id="step-finished" class="step" data-step="8">
           <h2>8 — Finished</h2>
           <p>
             The import was <span id="msg_successfully"></span>completed.<br />
@@ -1096,22 +1080,25 @@
          */
         function validateStep(stepId) {
           switch (stepId) {
-            case "step-2": {
-              return validateStep2();
+            case "step-tou": {
+              return validateTermsOfUse(
+                termsOfUseQuestions,
+                tosCheckboxMapping,
+              );
             }
-            case "step-3": {
-              return validateStep3(eaUrlObj, eaKeyObj);
+            case "step-eadata": {
+              return validateEAconnectionData(eaUrlObj, eaKeyObj);
             }
-            case "step-4": {
-              return validateStep4(countrySel);
+            case "step-country": {
+              return validateCountry(countrySel);
             }
-            case "step-6": {
-              return validateStep6(
+            case "step-dates": {
+              return validateDates(
                 document.getElementById("date_from").value,
                 document.getElementById("date_to").value,
               );
             }
-            case "step-7": {
+            case "step-preview": {
               doStartImportData();
               return false;
             }
@@ -1170,9 +1157,9 @@
             btnNext.textContent = "Start";
             btnNext.classList.remove("hide");
             btnPrev.classList.add("hide");
-          } else if (currentStep === 6) {
+          } else if (currentStep === steps.length - 2) {
             btnNext.textContent = "Start data import";
-          } else if (currentStep === 7) {
+          } else if (currentStep === steps.length - 1) {
             btnNext.classList.add("hide");
             btnPrev.classList.add("hide");
           } else {
@@ -1571,14 +1558,14 @@
             // Overlay erstellen
             const overlay = document.createElement("div");
             overlay.style.cssText = `
-                        position: fixed;
-                        inset: 0;
-                        background: rgba(0,0,0,0.5);
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        z-index: 9999;
-                      `;
+                              position: fixed;
+                              inset: 0;
+                              background: rgba(0,0,0,0.5);
+                              display: flex;
+                              justify-content: center;
+                              align-items: center;
+                              z-index: 9999;
+                            `;
 
             // Dialog erstellen
             const dialog = document.createElement("div");
@@ -1588,26 +1575,26 @@
             dialog.setAttribute("aria-describedby", "dlgDescription");
 
             dialog.style.cssText = `
-              background: white;
-              padding: 20px;
-              border-radius: 8px;
-              min-width: 300px;
-              text-align: center;
-            `;
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    min-width: 300px;
+                    text-align: center;
+                  `;
 
             dialog.innerHTML = `
-              <h3 id="dlgTitle">Confirm Holiday Import</h2>
+                    <h3 id="dlgTitle">Confirm Holiday Import</h2>
 
-              <div id="dlgDescription">
-                <p>The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.</p>
-                <p>Appointments cannot be scheduled during these blocked periods.</p>
-                <p><strong>Warning:</strong> Once imported, this operation cannot be reverted automatically.</p>
-                <p>Are you sure you want to import?</p>
-              </div>
+                    <div id="dlgDescription">
+                      <p>The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.</p>
+                      <p>Appointments cannot be scheduled during these blocked periods.</p>
+                      <p><strong>Warning:</strong> Once imported, this operation cannot be reverted automatically.</p>
+                      <p>Are you sure you want to import?</p>
+                    </div>
 
-              <button type="button" id="dlgImport">Import</button>
-              <button type="button" id="dlgCancel">Cancel</button>
-            `;
+                    <button type="button" id="dlgImport">Import</button>
+                    <button type="button" id="dlgCancel">Cancel</button>
+                  `;
 
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
