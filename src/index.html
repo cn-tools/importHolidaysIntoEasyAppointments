@@ -424,10 +424,9 @@
        * Reset the preview of public holidays to its initial state.
        */
       function resetPreviewPublicHolidays() {
+        document.getElementById("preview_public_text").classList.remove("hide");
         const previewPublic = document.getElementById("preview_public");
         previewPublic.innerHTML = ""; // Clear previous content
-        previewPublic.textContent =
-          "Click the button to load the public holidays preview";
       }
 
       /**
@@ -478,8 +477,6 @@
         );
 
         if (!errors.length && connectionTestState !== 1) {
-          testEasyAppointmentsConnection();
-
           errors.push(
             "Please test the connection to EasyAppointments and ensure it is successful.",
           );
@@ -1114,14 +1111,18 @@
         </div>
         <div id="step-preview" class="step" data-step="7">
           <h2>7 — Preview & Import</h2>
+          <p id="preview_public_text">
+            Click <strong>"Load Public Holidays"</strong> to display all
+            available public holidays. Once the list is loaded, you can review
+            the holidays and select which ones should be imported into
+            EasyAppointments.
+          </p>
           <div>
             <button type="button" id="load_holidays" class="secondary">
-              Load public holidays preview
+              Load Public Holidays
             </button>
           </div>
-          <div id="preview_public">
-            Click the button to load the public holidays preview
-          </div>
+          <div id="preview_public"></div>
         </div>
         <div id="step-finished" class="step" data-step="8">
           <h2>8 — Finished</h2>
@@ -1579,6 +1580,13 @@
             btnNext.disabled = true;
             btnPrev.disabled = true;
 
+            if (base === "") {
+              throw new Error("no url available");
+            }
+            if (key === "") {
+              throw new Error("no key available");
+            }
+
             const r = await getEasyAppointmentsData(
               eaUrlObj,
               eaKeyObj,
@@ -1680,11 +1688,11 @@
             });
 
             previewPubilc.insertBefore(
-              document.createElement("span"),
+              document.createElement("p"),
               previewPubilc.firstChild,
             ).textContent = "Select the public holidays you want to import:";
 
-            const buttonContainer = document.createElement("div");
+            const buttonContainer = document.createElement("p");
             buttonContainer.id = "previewPubilcButtons";
 
             const btn_select_all = document.createElement("button");
@@ -1759,7 +1767,14 @@
               buttonContainer,
               previewPubilc.firstChild.nextSibling,
             );
+            document
+              .getElementById("preview_public_text")
+              .classList.add("hide");
           } catch (e) {
+            document
+              .getElementById("preview_public_text")
+              .classList.remove("hide");
+
             previewPubilc.textContent = "Error loading public holidays.";
             console.error("Error loading holidays.", e);
           }
