@@ -750,30 +750,30 @@
       }
 
       /* Terms of use - Container */
-      #termsofuse {
+      .checkboxes {
         margin: 1rem 0;
       }
 
       /* Einzelne TOU Checkbox */
-      #termsofuse .checkbox-item {
+      .checkboxes .checkbox-item {
         display: flex;
         align-items: flex-start;
         margin-bottom: 20px;
       }
 
-      #termsofuse .checkbox-item:last-child {
+      .checkboxes .checkbox-item:last-child {
         margin-bottom: 0;
       }
 
       /* Native Checkbox ausblenden */
-      #termsofuse .checkbox-item input[type="checkbox"] {
+      .checkboxes .checkbox-item input[type="checkbox"] {
         position: absolute;
         opacity: 0;
         pointer-events: none;
       }
 
       /* Label */
-      #termsofuse .checkbox-item label {
+      .checkboxes .checkbox-item label {
         position: relative;
         display: flex;
         align-items: center;
@@ -791,12 +791,12 @@
       }
 
       /* Text */
-      #termsofuse .checkbox-item .checkbox-text {
+      .checkboxes .checkbox-item .checkbox-text {
         line-height: 1.7;
       }
 
       /* Checkbox-Grundform */
-      #termsofuse .checkbox-item label::before {
+      .checkboxes .checkbox-item label::before {
         content: "";
         position: absolute;
         left: 0;
@@ -812,7 +812,7 @@
       }
 
       /* Haken */
-      #termsofuse .checkbox-item label::after {
+      .checkboxes .checkbox-item label::after {
         content: "";
         position: absolute;
         left: 9px;
@@ -826,13 +826,13 @@
       }
 
       /* Hover */
-      #termsofuse .checkbox-item label:hover::before {
+      .checkboxes .checkbox-item label:hover::before {
         border-color: var(--accent);
         box-shadow: 0 4px 12px var(--cbx_border);
       }
 
       /* Aktiv */
-      #termsofuse
+      .checkboxes
         .checkbox-item
         input[type="checkbox"]:checked
         + label::before {
@@ -842,18 +842,18 @@
       }
 
       /* Haken anzeigen */
-      #termsofuse .checkbox-item input[type="checkbox"]:checked + label::after {
+      .checkboxes .checkbox-item input[type="checkbox"]:checked + label::after {
         transform: translateY(-60%) rotate(45deg) scale(1);
       }
 
       /* Fokus für Tastaturnavigation */
-      #termsofuse .checkbox-item input[type="checkbox"]:focus + label::before {
+      .checkboxes .checkbox-item input[type="checkbox"]:focus + label::before {
         outline: 3px solid var(--cbx_border);
         outline-offset: 2px;
       }
 
       /* Optional: Textfarbe bei aktivierter Checkbox */
-      #termsofuse .checkbox-item input[type="checkbox"]:checked + label {
+      .checkboxes .checkbox-item input[type="checkbox"]:checked + label {
         color: var(--muted);
       }
 
@@ -1019,7 +1019,7 @@
         </div>
         <div id="step-tou" class="step" data-step="2">
           <h2>2 — Terms of Use</h2>
-          <div id="termsofuse"></div>
+          <div id="termsofuse" class="checkboxes"></div>
         </div>
         <div id="step-eadata" class="step" data-step="3">
           <h2>3 — Destination (EasyAppointments)</h2>
@@ -1122,7 +1122,7 @@
               Load Public Holidays
             </button>
           </div>
-          <div id="preview_public"></div>
+          <div id="preview_public" class="checkboxes"></div>
         </div>
         <div id="step-finished" class="step" data-step="8">
           <h2>8 — Finished</h2>
@@ -1651,15 +1651,10 @@
 
             previewPubilc.innerHTML = ""; // Clear previous content
 
-            const ul = document.createElement("ul");
-            ul.classList.add("no-bullets");
-            previewPubilc.appendChild(ul);
-
             data.forEach((item) => {
-              // create a new <li> element for each holiday
-              const li = document.createElement("li");
+              const cbxItem = document.createElement("div");
+              cbxItem.classList.add("checkbox-item");
 
-              // Checkbox erzeugen
               const checkbox = document.createElement("input");
               checkbox.type = "checkbox";
               checkbox.id = item.id;
@@ -1669,22 +1664,20 @@
                 addDataAttributes(checkbox, key, value);
               });
 
-              // create label for the checkbox
               const label = document.createElement("label");
               label.htmlFor = item.id;
 
-              // Text aus dem name-Array holen (DE-Eintrag)
-              //label.textContent = item.name.find(n => n.language === lang)?.text || "";
-              label.textContent = `${item.startDate} - ${
+              const span = document.createElement("span");
+              span.classList.add("checkbox-text");
+              span.textContent = `${item.startDate} - ${
                 item.name.find((n) => n.language === lang)?.text || ""
               }`;
 
-              // add the checkbox and label to the <li>
-              li.appendChild(checkbox);
-              li.appendChild(label);
+              label.appendChild(span);
+              cbxItem.appendChild(checkbox);
+              cbxItem.appendChild(label);
 
-              // add the <li> to the container
-              ul.appendChild(li);
+              previewPubilc.appendChild(cbxItem);
             });
 
             previewPubilc.insertBefore(
