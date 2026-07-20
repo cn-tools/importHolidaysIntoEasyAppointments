@@ -5,23 +5,29 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="Import holidays from OpenHolidaysAPI into EasyAppointments. Easily load, review, select and import regional holidays for your booking calendar."
+      content="Import holidays from OpenHolidaysAPI into Easy!Appointments. Easily load, review, select and import regional holidays for your booking calendar."
     />
     <meta
       name="keywords"
-      content="EasyAppointments, holidays, import, OpenHolidaysAPI, booking, calendar, automation"
+      content="Easy!Appointments, holidays, import, OpenHolidaysAPI, booking, calendar, automation"
     />
     <meta name="author" content="cn-tools" />
-    <meta property="og:title" content="Import Holidays into EasyAppointments" />
+    <meta
+      property="og:title"
+      content="Import Holidays into Easy!Appointments"
+    />
     <meta
       property="og:description"
-      content="Import holidays from OpenHolidaysAPI into EasyAppointments with a simple workflow for destination setup, country selection and date range import."
+      content="Import holidays from OpenHolidaysAPI into Easy!Appointments with a simple workflow for destination setup, country selection and date range import."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="EasyAppointments Holiday Importer" />
+    <meta
+      property="og:site_name"
+      content="Easy!Appointments Holiday Importer"
+    />
     <meta property="og:locale" content="en_US" />
 
-    <title>Import Holidays into EasyAppointments</title>
+    <title>Import Holidays into Easy!Appointments</title>
 
     <script>
       const tosCheckboxMapping = {};
@@ -35,7 +41,7 @@
           user_answer: true,
         },
         tou3: {
-          text: "I have made a backup of my EasyAppointments data before using this tool.",
+          text: "I have made a backup of my Easy!Appointments data before using this tool.",
           user_answer: true,
         },
         tou4: {
@@ -193,7 +199,7 @@
       }
 
       /**
-       * Fetch data from the EasyAppointments API using the provided path and query parameters.
+       * Fetch data from the Easy!Appointments API using the provided path and query parameters.
        * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
        * @param {Object} [queryParams={}] - An object containing query parameters as key-value pairs.
        * @returns {Promise<Response>} - A promise that resolves to the fetch response.
@@ -226,10 +232,10 @@
             headers: { Authorization: "Bearer " + authKey },
           });
           if (!r.ok)
-            throw new Error("Failed to fetch data from EasyAppointments");
+            throw new Error("Failed to fetch data from Easy!Appointments");
           return r;
         } catch (error) {
-          console.error("Error fetching data from EasyAppointments:", error);
+          console.error("Error fetching data from Easy!Appointments:", error);
           throw error;
         }
       }
@@ -368,9 +374,9 @@
       }
 
       /**
-       * Post data to the EasyAppointments API using the provided path, authorization key, and request body.
-       * @param {string} eaURL - the base URL of EasyAppointments
-       * @param {string} eaAuthKey - Bearer key for EasyAppointments
+       * Post data to the Easy!Appointments API using the provided path, authorization key, and request body.
+       * @param {string} eaURL - the base URL of Easy!Appointments
+       * @param {string} eaAuthKey - Bearer key for Easy!Appointments
        * @param {string} path - The API endpoint path (e.g., 'blocked_periods').
        * @param {string} authKey - The API Bearer Key for authorization.
        * @param {Object} [body={}] - An object containing the request body to be sent as JSON.
@@ -410,12 +416,12 @@
           if (!r.ok) {
             const text = await r.text();
 
-            throw new Error(`EasyAppointments returned ${r.status}: ${text}`);
+            throw new Error(`Easy!Appointments returned ${r.status}: ${text}`);
           }
 
           return r;
         } catch (error) {
-          console.error("Error posting data to EasyAppointments:", error);
+          console.error("Error posting data to Easy!Appointments:", error);
           throw error;
         }
       }
@@ -454,7 +460,7 @@
       }
 
       /**
-       * Validates EasyAppointments connection settings.
+       * Validates Easy!Appointments connection settings.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
       function validateEAconnectionData(eaUrlObj, eaKeyObj) {
@@ -464,7 +470,7 @@
         const eaKey = eaKeyObj.value.trim();
 
         if (!eaUrl) {
-          errors.push("EasyAppointments URL is required.");
+          errors.push("Easy!Appointments URL is required.");
         }
 
         if (!eaKey) {
@@ -478,7 +484,7 @@
 
         if (!errors.length && connectionTestState !== 1) {
           errors.push(
-            "Please test the connection to EasyAppointments and ensure it is successful.",
+            "Please test the connection to Easy!Appointments and ensure it is successful.",
           );
         }
 
@@ -964,7 +970,7 @@
     </style>
   </head>
   <body>
-    <header><h1>Import Holidays into EasyAppointments</h1></header>
+    <header><h1>Import Holidays into Easy!Appointments</h1></header>
     <main>
       <div class="progress-wrapper">
         <div class="progress-line" id="progress-line"></div>
@@ -987,12 +993,12 @@
               href="https://easyappointments.org/"
               target="_blank"
               rel="noopener nofollow"
-              >EasyAppointments</a
+              >Easy!Appointments</a
             >.
           </p>
           <p>
             Import automatically public holidays directly into your
-            EasyAppointments installation in seconds. No more manually creating
+            Easy!Appointments installation in seconds. No more manually creating
             holidays - simply select the country, enter your API credentials,
             and import.
           </p>
@@ -1000,14 +1006,14 @@
           <p>
             <strong>Your data stays under your control:</strong><br />All
             communication happens directly between your browser and your
-            EasyAppointments instance. No third-party services, proxy servers,
+            Easy!Appointments instance. No third-party services, proxy servers,
             or intermediate systems are involved, and no credentials or holiday
             data are stored or processed on external servers.
           </p>
           <h3>Getting Started</h3>
           <ul>
             <li>Review and accept the Terms of Use</li>
-            <li>Enter your EasyAppointments URL and API Bearer Token</li>
+            <li>Enter your Easy!Appointments URL and API Bearer Token</li>
             <li>Select the country whose public holidays you want to import</li>
             <li>Choose the subdivision/region and preferred language</li>
             <li>Define the date range for the holiday search</li>
@@ -1022,7 +1028,7 @@
           <div id="termsofuse" class="checkboxes"></div>
         </div>
         <div id="step-eadata" class="step" data-step="3">
-          <h2>3 — Destination (EasyAppointments)</h2>
+          <h2>3 — Destination (Easy!Appointments)</h2>
           <p>
             To establish the connection, please enter the
             <strong>URL</strong> and <strong>API Key</strong> in the
@@ -1037,7 +1043,7 @@
           </p>
           <div class="grid">
             <div>
-              <label for="ea_url">EasyAppointments base URL</label>
+              <label for="ea_url">Easy!Appointments base URL</label>
               <input
                 type="url"
                 id="ea_url"
@@ -1064,7 +1070,7 @@
           <p class="secondary">
             <strong>Notice:</strong> The API Bearer Key is not sent to any
             server or third-party service. It is used locally in your browser to
-            get and post data to the provided EasyAppointments instance.
+            get and post data to the provided Easy!Appointments instance.
           </p>
         </div>
         <div id="step-country" class="step" data-step="4">
@@ -1115,7 +1121,7 @@
             Click <strong>"Load Public Holidays"</strong> to display all
             available public holidays. Once the list is loaded, you can review
             the holidays and select which ones should be imported into
-            EasyAppointments.
+            Easy!Appointments.
           </p>
           <div>
             <button type="button" id="load_holidays" class="secondary">
@@ -1134,13 +1140,13 @@
 
           <p id="import-summary" class="muted">
             <strong>Brief summary:</strong>
-            Please check your EasyAppointments calendar for the imported blocked
-            periods.
+            Please check your Easy!Appointments calendar for the imported
+            blocked periods.
           </p>
 
           <ul>
             <li>
-              Open your EasyAppointments installation and check the calendar.
+              Open your Easy!Appointments installation and check the calendar.
             </li>
             <li>
               If you notice any discrepancies, check the browser console for
@@ -1567,7 +1573,7 @@
         }
 
         /**
-         * Test the connection to EasyAppointments.
+         * Test the connection to Easy!Appointments.
          */
         document.getElementById("test_con2ea").onclick = async () => {
           localStorage.setItem("connectionTestState", -1);
@@ -1607,7 +1613,7 @@
           } catch (e) {
             localStorage.setItem("connectionTestState", "-1");
             out.textContent = "Connection error";
-            console.error("Error testing connection to EasyAppointments", e);
+            console.error("Error testing connection to Easy!Appointments", e);
           } finally {
             btnNext.disabled = false;
             btnPrev.disabled = false;
@@ -1920,7 +1926,7 @@
         /**
          * Handle the import button click event.
          * Validates that at least one holiday is selected, shows the import confirmation dialog,
-         * and posts each selected holiday to EasyAppointments.
+         * and posts each selected holiday to Easy!Appointments.
          */
         async function doStartImportData() {
           if (!minimumOneDateSelected()) {
@@ -1984,7 +1990,7 @@
             } catch (error) {
               console.error(error);
 
-              console.error("Error posting data to EasyAppointments:", error);
+              console.error("Error posting data to Easy!Appointments:", error);
               alert(`Import failed: ${error.message || "Unknown error"}`);
             }
           } finally {
