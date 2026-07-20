@@ -64,7 +64,7 @@
        * @param {string} prefix - The prefix for the data attribute names.
        * @param {Object|Array|string|number} value - The value to be added as data attributes. Can be an object, array, string, or number.
        */
-      function addDataAttributes(element, prefix, value) {
+      const addDataAttributes = function (element, prefix, value) {
         if (Array.isArray(value)) {
           // Use the first element for arrays
           // (in your data, "name" contains only one object)
@@ -88,13 +88,13 @@
         } else {
           element.dataset[prefix] = String(value);
         }
-      }
+      };
 
       /**
        * Check for a new version of the tool by fetching version information from GitHub.
        * If a new version is available, display a notification in the footer.
        */
-      async function checkForNewVersion() {
+      const checkForNewVersion = async function () {
         try {
           const response = await fetch(
             "https://api.github.com/repos/cn-tools/importHolidaysIntoEasyAppointments/releases/latest",
@@ -115,14 +115,14 @@
         } catch (error) {
           console.error("Error checking for new version:", error);
         }
-      }
+      };
 
       /**
        * Convert the attributes of an input element into an <openHolidayApi ... /> tag.
        * @param {string} elementId - The ID of the input element.
        * @returns {string|false} - Returns the <openHolidayApi ... /> tag as a string, or false if the element is not found.
        */
-      function convertInputToOpenHolidayApiTag(elementId) {
+      const convertInputToOpenHolidayApiTag = function (elementId) {
         const input = document.getElementById(elementId);
 
         if (!input) {
@@ -146,14 +146,14 @@
         attributes.push(`imported="${new Date().toISOString()}"`);
 
         return `<openHolidayApi ${attributes.join(" ")} />`;
-      }
+      };
 
       /**
        * Create checkboxes for the Terms of Use questions and append them to the specified container.
        * @param {Object} questions - An object containing the questions and their user answers.
        * @param {string} containerId - The ID of the container where the checkboxes will be appended.
        */
-      function createTermsOfUseCheckboxes(questions, containerId) {
+      const createTermsOfUseCheckboxes = function (questions, containerId) {
         const container = document.getElementById(containerId);
 
         // Objekt in Array umwandeln
@@ -196,7 +196,7 @@
           wrapper.appendChild(label);
           container.appendChild(wrapper);
         });
-      }
+      };
 
       /**
        * Fetch data from the Easy!Appointments API using the provided path and query parameters.
@@ -204,7 +204,7 @@
        * @param {Object} [queryParams={}] - An object containing query parameters as key-value pairs.
        * @returns {Promise<Response>} - A promise that resolves to the fetch response.
        */
-      async function getEasyAppointmentsData(
+      const getEasyAppointmentsData = async function (
         eaUrlObj,
         eaKeyObj,
         path,
@@ -238,7 +238,7 @@
           console.error("Error fetching data from Easy!Appointments:", error);
           throw error;
         }
-      }
+      };
 
       /**
        * Normalizes a URL by removing leading/trailing whitespace
@@ -247,13 +247,13 @@
        * @param {string} url - The URL to normalize.
        * @returns {string} The normalized URL without trailing slashes.
        */
-      function getEAurl(url) {
+      const getEAurl = function (url) {
         let baseUrl = url.trim();
         while (baseUrl.endsWith("/")) {
           baseUrl = baseUrl.slice(0, -1);
         }
         return baseUrl;
-      }
+      };
 
       /**
        * Builds and returns the EasyAPIs base endpoint URL.
@@ -264,19 +264,19 @@
        * @param {string} url - The source URL used to determine the application base URL.
        * @returns {string} The complete EasyAPIs v1 endpoint URL.
        */
-      function getEAapiURL(url) {
+      const getEAapiURL = function (url) {
         let baseUrl = getEAurl(url);
         baseUrl += "/index.php/api/v1/";
 
         return baseUrl;
-      }
+      };
 
       /**
        * Get a formatted holiday name with its year from the holiday object.
        * @param {Object} holiday - The holiday object containing nameText and startDate.
        * @returns {string} - Returns the formatted holiday name with year, or a default message if the holiday name is not available.
        */
-      function getFormattedHolidayName(holiday) {
+      const getFormattedHolidayName = function (holiday) {
         if (!holiday) return "Holiday name not available";
 
         const text = holiday.dataset.nameText || "Holiday";
@@ -297,7 +297,7 @@
         }
 
         return text + " " + year;
-      }
+      };
 
       /**
        * Get the text for a given language from the data structure.
@@ -307,7 +307,7 @@
        * @param {string} language - The desired language code.
        * @returns {string} - The text in the desired language or an empty string if not found.
        */
-      function getLanguageText(data, isoCode, language) {
+      const getLanguageText = function (data, isoCode, language) {
         const languageEntry = data.find(
           (item) => item.isoCode.toUpperCase() === isoCode.toUpperCase(),
         );
@@ -329,26 +329,26 @@
         }
 
         return translation?.text || "";
-      }
+      };
 
       /**
        * Check if at least one holiday is selected for import.
        * @returns {boolean} - Returns true if at least one checkbox is checked, false otherwise.
        */
-      function minimumOneDateSelected() {
+      const minimumOneDateSelected = function () {
         const previewPublic = document.getElementById("preview_public");
         const checkboxes = previewPublic.querySelectorAll(
           "input[type='checkbox']",
         );
         return Array.from(checkboxes).some((cb) => cb.checked);
-      }
+      };
 
       /**
        * Parse the first <openHolidayApi ... /> tag from the provided content and extract its attributes.
        * @param {string} content - The HTML content to parse.
        * @returns {Object|false} Returns an object with the attributes of the first <openHolidayApi> tag, or false if not found.
        */
-      function parseFirstOpenHolidayApiTag(content) {
+      const parseFirstOpenHolidayApiTag = function (content) {
         // HTML-Entities dekodieren, falls der Tag als Text gespeichert wurde
         content = content
           .replaceAll("&lt;", "<")
@@ -371,7 +371,7 @@
         }
 
         return result;
-      }
+      };
 
       /**
        * Post data to the Easy!Appointments API using the provided path, authorization key, and request body.
@@ -382,7 +382,7 @@
        * @param {Object} [body={}] - An object containing the request body to be sent as JSON.
        * @returns {Promise<Response>} - A promise that resolves to the fetch response.
        */
-      async function postEasyAppointmentsData(
+      const postEasyAppointmentsData = async function (
         eaApiURL,
         eaAuthKey,
         path,
@@ -424,16 +424,16 @@
           console.error("Error posting data to Easy!Appointments:", error);
           throw error;
         }
-      }
+      };
 
       /**
        * Reset the preview of public holidays to its initial state.
        */
-      function resetPreviewPublicHolidays() {
+      const resetPreviewPublicHolidays = function () {
         document.getElementById("preview_public_text").classList.remove("hide");
         const previewPublic = document.getElementById("preview_public");
         previewPublic.innerHTML = ""; // Clear previous content
-      }
+      };
 
       /**
        * Resets all checkboxes within the Terms of Use container.
@@ -451,19 +451,19 @@
        * @param {string} message - The message to display.
        * @returns {boolean} Returns false when a message is displayed, otherwise true.
        */
-      function showError(message) {
+      const showError = function (message) {
         if (message) {
           alert(message);
           return false;
         }
         return true;
-      }
+      };
 
       /**
        * Validates Easy!Appointments connection settings.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateEAconnectionData(eaUrlObj, eaKeyObj) {
+      const validateEAconnectionData = function (eaUrlObj, eaKeyObj) {
         const errors = [];
 
         const eaUrl = eaUrlObj.value.trim();
@@ -489,23 +489,23 @@
         }
 
         return showError(errors.join("\n"));
-      }
+      };
 
       /**
        * Validates the country selection step.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateCountry(countrySel) {
+      const validateCountry = function (countrySel) {
         return showError(
           !countrySel.value ? "Country selection is required." : "",
         );
-      }
+      };
 
       /**
        * Validates the date range selection step.
        * @returns {boolean} True if validation succeeds; otherwise false.
        */
-      function validateDates(from, to) {
+      const validateDates = function (from, to) {
         const errors = [];
 
         if (!from) {
@@ -521,7 +521,7 @@
         }
 
         return showError(errors.join("\n"));
-      }
+      };
 
       /**
        * Validate the user's answers to the Terms of Use questions against the expected answers.
@@ -529,7 +529,7 @@
        * @param {Object} mapping - An object mapping question keys to their corresponding checkbox IDs.
        * @returns {boolean} - Returns true if all answers are correct, false otherwise.
        */
-      function validateTermsOfUse(questions, mapping) {
+      const validateTermsOfUse = function (questions, mapping) {
         for (const [questionKey, question] of Object.entries(questions)) {
           const checkboxId = mapping[questionKey];
           const checkbox = document.getElementById(checkboxId);
@@ -542,7 +542,7 @@
         }
 
         return true;
-      }
+      };
     </script>
 
     <style>
@@ -1307,7 +1307,7 @@
          * @param {string} stepId - The ID of the current step.
          * @returns {boolean} - Returns true if the step is valid, false otherwise.
          */
-        function validateStep(stepId) {
+        const validateStep = function (stepId) {
           switch (stepId) {
             case "step-tou": {
               return validateTermsOfUse(
@@ -1335,7 +1335,7 @@
               return true;
             }
           }
-        }
+        };
 
         /**
          * Updates the visual state of the progress indicator.
@@ -1345,7 +1345,7 @@
          * - Resets upcoming steps to inactive.
          * - Adjusts the progress line width based on the current step.
          */
-        function updateProgressSteps() {
+        const updateProgressSteps = function () {
           // Update the status of the progress circles (active, completed, inactive).
           circles.forEach((circle, index) => {
             if (index < currentStep) {
@@ -1362,7 +1362,7 @@
           // Calculate the width of the progress line
           const progressPercent = (currentStep / (steps.length - 1)) * 100;
           progressLine.style.width = progressPercent + "%";
-        }
+        };
 
         /**
          * Displays the specified step in the workflow and updates
@@ -1376,7 +1376,7 @@
          * - Changes the Next button text to "Start" on the first step.
          * - Shows or hides the Previous button depending on the current step.
          */
-        function activateStep(i) {
+        const activateStep = function (i) {
           steps.forEach((s) =>
             s.classList.toggle("active", +s.dataset.step === i + 1),
           );
@@ -1397,12 +1397,120 @@
           }
 
           updateProgressSteps();
-        }
+        };
+
+        /**
+         * Load the list of languages for the selected country and populate the language select element.
+         */
+        const loadLanguages = async function () {
+          const langSel = document.getElementById("language");
+          langSel.innerHTML = '<option value="">Loading...</option>';
+          try {
+            const url = new URL("https://openholidaysapi.org/Languages");
+
+            //url.searchParams.set('languageIsoCode', browserLanguage);
+            const r = await fetch(url.toString(), {
+              headers: { accept: "application/json" },
+            });
+            if (!r.ok) throw new Error("Failed");
+            const list = await r.json();
+
+            const countryIsoCode = countrySel.value;
+            const officialCountryLanguages =
+              officialLanguagesByCountry[countryIsoCode] || [];
+
+            //langSel.innerHTML = '<option value="">Choose...</option>';
+            langSel.innerHTML = "";
+
+            officialCountryLanguages.forEach((lang) => {
+              const o = document.createElement("option");
+              o.value = lang;
+              o.textContent =
+                getLanguageText(list, lang, countryIsoCode) || lang;
+
+              langSel.appendChild(o);
+            });
+
+            if (!langSel.options.length) {
+              langSel.innerHTML = '<option value="">No languages</option>';
+            }
+            langSel.onchange = () => {
+              resetPreviewPublicHolidays();
+            };
+          } catch (e) {
+            langSel.innerHTML =
+              '<option value="">Unable to load languages</option>';
+            console.error("Error loading languages", e);
+          }
+        };
+
+        /**
+         * Load the list of subdivisions for the selected country and populate the subdivision select element.
+         */
+        const loadSubdivisions = async function () {
+          const subSel = document.getElementById("subdivision");
+          subSel.innerHTML = '<option value="">Loading...</option>';
+          try {
+            const url = new URL("https://openholidaysapi.org/Subdivisions");
+            const countryIsoCode = countrySel.value;
+            url.searchParams.set("countryIsoCode", countryIsoCode);
+            url.searchParams.set("languageIsoCode", browserLanguage);
+            const r = await fetch(url.toString(), {
+              headers: { accept: "application/json" },
+            });
+            if (!r.ok) throw new Error("Failed");
+            const list = await r.json();
+            list.sort((a, b) =>
+              (a.name?.[0]?.text || "").localeCompare(
+                b.name?.[0]?.text || "",
+                browserLanguage,
+              ),
+            );
+
+            subSel.innerHTML = '<option value="">Ignore</option>';
+
+            list.forEach((s) => {
+              const o = document.createElement("option");
+              o.value = s.code;
+
+              o.textContent =
+                s.name?.find(
+                  (n) => (n.language || "").toUpperCase() === browserLanguage,
+                )?.text ||
+                s.name?.[0]?.text ||
+                "";
+
+              subSel.appendChild(o);
+            });
+
+            const localStorageSubdivisionKey = "subdivision-" + countryIsoCode;
+
+            if (!subSel.options.length) {
+              subSel.innerHTML = '<option value="">No subdivisions</option>';
+            }
+
+            subSel.onchange = () => {
+              localStorage.setItem(localStorageSubdivisionKey, subSel.value);
+              resetPreviewPublicHolidays();
+            };
+
+            const savedSubDivision =
+              localStorage.getItem(localStorageSubdivisionKey) || false;
+            if (savedSubDivision) {
+              subSel.value = savedSubDivision;
+              resetPreviewPublicHolidays();
+            }
+          } catch (e) {
+            subSel.innerHTML =
+              '<option value="">Unable to load subdivisions</option>';
+            console.error("Error loading subdivisions", e);
+          }
+        };
 
         /**
          * Load the list of countries from the OpenHolidaysAPI and populate the country select element.
          */
-        async function loadCountries() {
+        const loadCountries = async function () {
           try {
             const url = new URL("https://openholidaysapi.org/Countries");
 
@@ -1461,116 +1569,8 @@
               '<option value="">Unable to load countries</option>';
             console.error("Error loading countries", e);
           }
-        }
+        };
         loadCountries();
-
-        /**
-         * Load the list of languages for the selected country and populate the language select element.
-         */
-        async function loadLanguages() {
-          const langSel = document.getElementById("language");
-          langSel.innerHTML = '<option value="">Loading...</option>';
-          try {
-            const url = new URL("https://openholidaysapi.org/Languages");
-
-            //url.searchParams.set('languageIsoCode', browserLanguage);
-            const r = await fetch(url.toString(), {
-              headers: { accept: "application/json" },
-            });
-            if (!r.ok) throw new Error("Failed");
-            const list = await r.json();
-
-            const countryIsoCode = countrySel.value;
-            const officialCountryLanguages =
-              officialLanguagesByCountry[countryIsoCode] || [];
-
-            //langSel.innerHTML = '<option value="">Choose...</option>';
-            langSel.innerHTML = "";
-
-            officialCountryLanguages.forEach((lang) => {
-              const o = document.createElement("option");
-              o.value = lang;
-              o.textContent =
-                getLanguageText(list, lang, countryIsoCode) || lang;
-
-              langSel.appendChild(o);
-            });
-
-            if (!langSel.options.length) {
-              langSel.innerHTML = '<option value="">No languages</option>';
-            }
-            langSel.onchange = () => {
-              resetPreviewPublicHolidays();
-            };
-          } catch (e) {
-            langSel.innerHTML =
-              '<option value="">Unable to load languages</option>';
-            console.error("Error loading languages", e);
-          }
-        }
-
-        /**
-         * Load the list of subdivisions for the selected country and populate the subdivision select element.
-         */
-        async function loadSubdivisions() {
-          const subSel = document.getElementById("subdivision");
-          subSel.innerHTML = '<option value="">Loading...</option>';
-          try {
-            const url = new URL("https://openholidaysapi.org/Subdivisions");
-            const countryIsoCode = countrySel.value;
-            url.searchParams.set("countryIsoCode", countryIsoCode);
-            url.searchParams.set("languageIsoCode", browserLanguage);
-            const r = await fetch(url.toString(), {
-              headers: { accept: "application/json" },
-            });
-            if (!r.ok) throw new Error("Failed");
-            const list = await r.json();
-            list.sort((a, b) =>
-              (a.name?.[0]?.text || "").localeCompare(
-                b.name?.[0]?.text || "",
-                browserLanguage,
-              ),
-            );
-
-            subSel.innerHTML = '<option value="">Ignore</option>';
-
-            list.forEach((s) => {
-              const o = document.createElement("option");
-              o.value = s.code;
-
-              o.textContent =
-                s.name?.find(
-                  (n) => (n.language || "").toUpperCase() === browserLanguage,
-                )?.text ||
-                s.name?.[0]?.text ||
-                "";
-
-              subSel.appendChild(o);
-            });
-
-            const localStorageSubdivisionKey = "subdivision-" + countryIsoCode;
-
-            if (!subSel.options.length) {
-              subSel.innerHTML = '<option value="">No subdivisions</option>';
-            }
-
-            subSel.onchange = () => {
-              localStorage.setItem(localStorageSubdivisionKey, subSel.value);
-              resetPreviewPublicHolidays();
-            };
-
-            const savedSubDivision =
-              localStorage.getItem(localStorageSubdivisionKey) || false;
-            if (savedSubDivision) {
-              subSel.value = savedSubDivision;
-              resetPreviewPublicHolidays();
-            }
-          } catch (e) {
-            subSel.innerHTML =
-              '<option value="">Unable to load subdivisions</option>';
-            console.error("Error loading subdivisions", e);
-          }
-        }
 
         /**
          * Test the connection to Easy!Appointments.
@@ -1783,7 +1783,7 @@
          * Show a confirmation dialog before proceeding with the import.
          * @returns {Promise<boolean>} Resolves to true if the user confirms, false otherwise.
          */
-        function showImportDialog() {
+        const showImportDialog = function () {
           return new Promise((resolve) => {
             const previousFocus = document.activeElement;
             const previousOverflow = document.body.style.overflow;
@@ -1921,14 +1921,14 @@
             // Initialer Fokus auf Cancel
             cancelBtn.focus();
           });
-        }
+        };
 
         /**
          * Handle the import button click event.
          * Validates that at least one holiday is selected, shows the import confirmation dialog,
          * and posts each selected holiday to Easy!Appointments.
          */
-        async function doStartImportData() {
+        const doStartImportData = async function () {
           if (!minimumOneDateSelected()) {
             alert("Please select at least one holiday to import.");
             return;
@@ -1997,7 +1997,7 @@
             btnNext.disabled = false;
             btnPrev.disabled = false;
           }
-        }
+        };
       });
     </script>
   </body>
