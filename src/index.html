@@ -64,18 +64,22 @@
        * @param {string} prefix - The prefix for the data attribute names.
        * @param {Object|Array|string|number} value - The value to be added as data attributes. Can be an object, array, string, or number.
        */
-      const addDataAttributes = function (element, prefix, value) {
+      const addDataAttributes = function addDataAttributesIntern(
+        element,
+        prefix,
+        value,
+      ) {
         if (Array.isArray(value)) {
           // Use the first element for arrays
           // (in your data, "name" contains only one object)
           if (value.length === 1 && typeof value[0] === "object") {
-            addDataAttributes(element, prefix, value[0]);
+            addDataAttributesIntern(element, prefix, value[0]);
           } else {
             element.dataset[prefix] = JSON.stringify(value);
           }
         } else if (value !== null && typeof value === "object") {
           Object.entries(value).forEach(([key, val]) => {
-            addDataAttributes(
+            addDataAttributesIntern(
               element,
               `${prefix}${key.charAt(0).toUpperCase()}${key.slice(1)}`,
               val,
@@ -439,11 +443,11 @@
        * Resets all checkboxes within the Terms of Use container.
        * @returns {void}
        */
-      function resetTermsOfUse() {
+      const resetTermsOfUse = function () {
         const container = document.getElementById("termsofuse");
         const checkboxes = container.querySelectorAll("input[type='checkbox']");
         checkboxes.forEach((cb) => (cb.checked = false));
-      }
+      };
 
       /**
        * Displays an error message in an alert dialog.
