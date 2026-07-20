@@ -1,8 +1,8 @@
 # importHolidaysIntoEasyAppointments
 
-> ⚠️ **Notice**: This project is in active development!
+A small web-based utility to import holiday data into the [Easy!Appointments](https://easyappointments.org/) scheduling system.
 
-A small web-based utility to import holiday data into the Easy!Appointments scheduling system.
+> ⚠️ **Notice**: This project is in active development!
 
 ## Overview
 
@@ -11,8 +11,9 @@ This project provides a simple frontend and backend to load holiday definitions 
 ## Features
 
 - Easy import of holiday entries into Easy!Appointments
+- Select preferred country, subdivison, language, date range
+- Choose explicity which holidays should be imported into your instance of Easy!Appointments
 - Web browser interface via `index.html`
-- Simple installation for local or XAMPP deployments
 - No third-party services or server involved
 
 ## Usage
@@ -33,14 +34,14 @@ When using the hosted interface from GitHub Pages, CORS (Cross-Origin Resource S
 
 ### Requirements
 
-- Easy!Appointments installation
-- Optional: Web server environment such as XAMPP, Apache, or Nginx
+- Easy!Appointments installation (local or online)
+- Optional: Web server environment such as XAMPP, Apache or Nginx
 
 ### Installation
 
-1. Clone or copy this repository into your web server folder.
-2. Place the files inside the Easy!Appointments installation directory or into a subfolder that can access your Easy!Appointments database and configuration.
-3. Ensure that PHP is available and the web server can execute the script.
+1. Clone or copy this repository into a local folder.
+2. If not active yet, activate API access in your preferred instance of Easy!Appointments.
+3. Go to "Try" ;)
 
 ### Try
 
