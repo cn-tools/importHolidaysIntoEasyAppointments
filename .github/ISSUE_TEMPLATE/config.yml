@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ❌ Report Easy!Appointments Core Issues
+    url: https://easyappointments.org/documentation/
+    about: For issues with Easy!Appointments core functionality, please report to the main Easy!Appointments repository
+  - name: 📖 Easy!Appointments Documentation
+    url: https://easyappointments.org/documentation/
+    about: Check the official Easy!Appointments documentation
+  - name: 💬 Easy!Appointments Questions and General Help - Support Group
+    url: https://groups.google.com/forum/#!forum/easy-appointments
+    about: For questions and general help, please use the Easy!Appointments forum
+  - name: 💬 Easy!Appointments Discord Channel
+    url: https://discord.gg/UeeSkaw
+    about: Join the Discord community of Easy!Appointments to connect with like-minded people, share ideas, get support, and stay up to date with the latest news, events, and discussions.
