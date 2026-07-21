@@ -450,14 +450,158 @@
       };
 
       /**
-       * Displays an error message in an alert dialog.
+       * Displays an error message in an dialog.
        *
        * @param {string} message - The message to display.
        * @returns {boolean} Returns false when a message is displayed, otherwise true.
        */
+      /**
+       * Shows a modal information dialog.
+       *
+       * Acts as an alert replacement and always resolves with false.
+       *
+       * @param {string} text Text to display.
+       * @returns {Promise<boolean>} Always resolves to false.
+       */
+      const showDialogWithText = function (text) {
+        return new Promise((resolve) => {
+          const previousFocus = document.activeElement;
+
+          const dialog = document.createElement("dialog");
+
+          dialog.style.cssText = `
+              padding: 20px;
+              border: none;
+              border-radius: 8px;
+              min-width: 300px;
+              max-width: 500px;
+              box-shadow: 0 8px 30px rgba(0,0,0,.3);
+              text-align: center;
+            `;
+
+          dialog.innerHTML = `
+              <p style="margin-bottom: 20px;">${text}</p>
+              <button type="button" id="dlgOk">OK</button>
+            `;
+
+          document.body.appendChild(dialog);
+
+          const okButton = dialog.querySelector("#dlgOk");
+
+          const closeDialog = () => {
+            dialog.close();
+            dialog.remove();
+
+            if (
+              previousFocus &&
+              previousFocus.isConnected &&
+              typeof previousFocus.focus === "function"
+            ) {
+              previousFocus.focus();
+            }
+
+            resolve(false);
+          };
+
+          // ESC
+          dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            closeDialog();
+          });
+
+          // OK
+          okButton.addEventListener("click", closeDialog);
+
+          dialog.showModal();
+          okButton.focus();
+        });
+      };
+
+      /**
+       * Show a confirmation dialog before proceeding with the import.
+       * @returns {Promise<boolean>}
+       */
+      const showImportDialog = function () {
+        return new Promise((resolve) => {
+          const previousFocus = document.activeElement;
+
+          const dialog = document.createElement("dialog");
+          dialog.setAttribute("aria-labelledby", "dlgTitle");
+          dialog.setAttribute("aria-describedby", "dlgDescription");
+
+          dialog.style.cssText = `
+              padding: 20px;
+              border: none;
+              border-radius: 8px;
+              min-width: 400px;
+              text-align: center;
+              box-shadow: 0 8px 30px rgba(0,0,0,.3);
+            `;
+
+          dialog.innerHTML = `
+              <h3 id="dlgTitle">Confirm Holiday Import</h3>
+
+              <div id="dlgDescription">
+                <p>
+                  The selected holidays will be imported and corresponding blocked
+                  periods will be created in Easy!Appointments.
+                </p>
+                <p>
+                  Appointments cannot be scheduled during these blocked periods.
+                </p>
+                <p>
+                  <strong>Warning:</strong>
+                  Once imported, this operation cannot be reverted automatically.
+                </p>
+                <p>Are you sure you want to import?</p>
+              </div>
+
+              <div style="display:flex; gap:10px; justify-content:center;">
+                <button type="button" id="dlgImport">Import</button>
+                <button type="button" id="dlgCancel">Cancel</button>
+              </div>
+            `;
+
+          document.body.appendChild(dialog);
+
+          const importBtn = dialog.querySelector("#dlgImport");
+          const cancelBtn = dialog.querySelector("#dlgCancel");
+
+          const closeDialog = (result) => {
+            dialog.close();
+            dialog.remove();
+
+            if (
+              previousFocus &&
+              previousFocus.isConnected &&
+              typeof previousFocus.focus === "function"
+            ) {
+              previousFocus.focus();
+            }
+
+            resolve(result);
+          };
+
+          // ESC oder backdrop => false
+          dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            closeDialog(false);
+          });
+
+          importBtn.addEventListener("click", () => closeDialog(true));
+          cancelBtn.addEventListener("click", () => closeDialog(false));
+
+          // Modal öffnen
+          dialog.showModal();
+
+          // Initialer Fokus
+          cancelBtn.focus();
+        });
+      };
+
       const showError = function (message) {
         if (message) {
-          alert(message);
+          showDialogWithText(message);
           return false;
         }
         return true;
@@ -482,7 +626,7 @@
         }
 
         const connectionTestState = Number.parseInt(
-          localStorage.getItem("connectionTestState"),
+          sessionStorage.getItem("connectionTestState"),
           10,
         );
 
@@ -818,7 +962,7 @@
         border-radius: 8px;
         background: #ffffff;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        transition: all var(--cbx_transition) ease;
+        transition: all var(--cbx_transition-speed) ease;
       }
 
       /* Haken */
@@ -832,7 +976,7 @@
         border: solid #ffffff;
         border-width: 0 3px 3px 0;
         transform: translateY(-60%) rotate(45deg) scale(0);
-        transition: transform var(--cbx_transition) ease;
+        transition: transform var(--cbx_transition-speed) ease;
       }
 
       /* Hover */
@@ -971,11 +1115,31 @@
         transform: none;
         box-shadow: none;
       }
+
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+      }
+
+      .skip-link:focus {
+        left: 10px;
+        top: 10px;
+        background: #000;
+        color: #fff;
+        padding: 10px;
+        z-index: 1000;
+      }
+
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
     </style>
   </head>
   <body>
+    <a href="#main" class="skip-link">Zum Inhalt springen</a>
     <header><h1>Import Holidays into Easy!Appointments</h1></header>
-    <main>
+    <main id="main">
       <div class="progress-wrapper">
         <div class="progress-line" id="progress-line"></div>
         <div class="progress-steps" id="progress-steps"></div>
@@ -1069,7 +1233,7 @@
             <button type="button" id="test_con2ea" class="secondary">
               Test connection
             </button>
-            <div id="test_result" class="secondary"></div>
+            <div id="test_result" class="secondary" aria-live="polite"></div>
           </div>
           <p class="secondary">
             <strong>Notice:</strong> The API Bearer Key is not sent to any
@@ -1132,7 +1296,7 @@
               Load Public Holidays
             </button>
           </div>
-          <div id="preview_public" class="checkboxes"></div>
+          <div id="preview_public" class="checkboxes" aria-live="polite"></div>
         </div>
         <div id="step-finished" class="step" data-step="8">
           <h2>8 — Finished</h2>
@@ -1220,43 +1384,43 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        localStorage.setItem("connectionTestState", -1);
+        sessionStorage.setItem("connectionTestState", -1);
 
         const eaUrlObj = document.getElementById("ea_url");
         const eaKeyObj = document.getElementById("ea_key");
 
-        eaUrlObj.value = localStorage.getItem("ea_url") || "";
-        eaKeyObj.value = localStorage.getItem("ea_key") || "";
+        eaUrlObj.value = sessionStorage.getItem("ea_url") || "";
+        eaKeyObj.value = sessionStorage.getItem("ea_key") || "";
 
         document.getElementById("date_from").value =
-          localStorage.getItem("date_from") ||
+          sessionStorage.getItem("date_from") ||
           new Date().toISOString().split("T")[0];
         document.getElementById("date_to").value =
-          localStorage.getItem("date_to") ||
+          sessionStorage.getItem("date_to") ||
           new Date(new Date().getFullYear(), 11, 31)
             .toISOString()
             .split("T")[0];
         document
           .getElementById("date_from")
           .addEventListener("change", function () {
-            localStorage.setItem("date_from", this.value);
+            sessionStorage.setItem("date_from", this.value);
             resetPreviewPublicHolidays();
           });
         document
           .getElementById("date_to")
           .addEventListener("change", function () {
-            localStorage.setItem("date_to", this.value);
+            sessionStorage.setItem("date_to", this.value);
             resetPreviewPublicHolidays();
           });
         eaUrlObj.addEventListener("change", function () {
-          localStorage.setItem("ea_url", this.value);
+          sessionStorage.setItem("ea_url", this.value);
           document.getElementById("test_result").textContent = ""; // Clear test result when URL changes
-          localStorage.setItem("connectionTestState", -1);
+          sessionStorage.setItem("connectionTestState", -1);
         });
         eaKeyObj.addEventListener("change", function () {
-          localStorage.setItem("ea_key", this.value);
+          sessionStorage.setItem("ea_key", this.value);
           document.getElementById("test_result").textContent = ""; // Clear test result when key changes
-          localStorage.setItem("connectionTestState", -1);
+          sessionStorage.setItem("connectionTestState", -1);
         });
 
         const steps = [...document.querySelectorAll(".step")];
@@ -1412,7 +1576,6 @@
           try {
             const url = new URL("https://openholidaysapi.org/Languages");
 
-            //url.searchParams.set('languageIsoCode', browserLanguage);
             const r = await fetch(url.toString(), {
               headers: { accept: "application/json" },
             });
@@ -1494,12 +1657,12 @@
             }
 
             subSel.onchange = () => {
-              localStorage.setItem(localStorageSubdivisionKey, subSel.value);
+              sessionStorage.setItem(localStorageSubdivisionKey, subSel.value);
               resetPreviewPublicHolidays();
             };
 
             const savedSubDivision =
-              localStorage.getItem(localStorageSubdivisionKey) || false;
+              sessionStorage.getItem(localStorageSubdivisionKey) || false;
             if (savedSubDivision) {
               subSel.value = savedSubDivision;
               resetPreviewPublicHolidays();
@@ -1556,12 +1719,12 @@
                 '<option value="">Unable to load countries</option>';
             }
             countrySel.onchange = () => {
-              localStorage.setItem("country", countrySel.value);
+              sessionStorage.setItem("country", countrySel.value);
               loadLanguages();
               loadSubdivisions();
               resetPreviewPublicHolidays();
             };
-            const savedCountry = localStorage.getItem("country") || false;
+            const savedCountry = sessionStorage.getItem("country") || false;
             if (savedCountry) {
               countrySel.value = savedCountry;
               loadLanguages();
@@ -1580,7 +1743,7 @@
          * Test the connection to Easy!Appointments.
          */
         document.getElementById("test_con2ea").onclick = async () => {
-          localStorage.setItem("connectionTestState", -1);
+          sessionStorage.setItem("connectionTestState", -1);
           const base = eaUrlObj.value.trim();
           const key = eaKeyObj.value;
           const out = document.getElementById("test_result");
@@ -1605,17 +1768,17 @@
                 length: 1,
               },
             );
-            localStorage.setItem("connectionTestState", r.ok ? "1" : "0");
+            sessionStorage.setItem("connectionTestState", r.ok ? "1" : "0");
 
             if (r.ok) {
               out.textContent = "Connection OK";
-              localStorage.setItem("ea_url", base);
-              localStorage.setItem("ea_key", key);
+              sessionStorage.setItem("ea_url", base);
+              sessionStorage.setItem("ea_key", key);
             } else {
               out.textContent = "Connection failed (" + r.status + ")";
             }
           } catch (e) {
-            localStorage.setItem("connectionTestState", "-1");
+            sessionStorage.setItem("connectionTestState", "-1");
             out.textContent = "Connection error";
             console.error("Error testing connection to Easy!Appointments", e);
           } finally {
@@ -1633,15 +1796,15 @@
           const sub = subdivisionSel?.value || undefined;
           const from = document.getElementById("date_from").value;
           const to = document.getElementById("date_to").value;
-          const previewPubilc = document.getElementById("preview_public");
+          const previewPublic = document.getElementById("preview_public");
 
           if (!iso || !from || !to) {
-            previewPubilc.textContent = "Select country and date range.";
+            previewPublic.textContent = "Select country and date range.";
             return;
           }
 
-          previewPubilc.innerHTML = ""; // Clear previous content
-          previewPubilc.textContent = "loading...";
+          previewPublic.innerHTML = ""; // Clear previous content
+          previewPublic.textContent = "loading...";
 
           try {
             const params = new URLSearchParams({
@@ -1659,7 +1822,7 @@
             if (!r.ok) throw new Error("Failed to load");
             const data = await r.json();
 
-            previewPubilc.innerHTML = ""; // Clear previous content
+            previewPublic.innerHTML = ""; // Clear previous content
 
             data.forEach((item) => {
               const cbxItem = document.createElement("div");
@@ -1687,12 +1850,12 @@
               cbxItem.appendChild(checkbox);
               cbxItem.appendChild(label);
 
-              previewPubilc.appendChild(cbxItem);
+              previewPublic.appendChild(cbxItem);
             });
 
-            previewPubilc.insertBefore(
+            previewPublic.insertBefore(
               document.createElement("p"),
-              previewPubilc.firstChild,
+              previewPublic.firstChild,
             ).textContent = "Select the public holidays you want to import:";
 
             const buttonContainer = document.createElement("p");
@@ -1703,7 +1866,7 @@
             btn_select_all.id = "btn_select_all";
             btn_select_all.classList.add("secondary");
             btn_select_all.onclick = () => {
-              const checkboxes = previewPubilc.querySelectorAll(
+              const checkboxes = previewPublic.querySelectorAll(
                 "input[type='checkbox']",
               );
               checkboxes.forEach((cb) => (cb.checked = true));
@@ -1715,7 +1878,7 @@
             btn_deselect_all.id = "btn_deselect_all";
             btn_deselect_all.classList.add("secondary");
             btn_deselect_all.onclick = () => {
-              const checkboxes = previewPubilc.querySelectorAll(
+              const checkboxes = previewPublic.querySelectorAll(
                 "input[type='checkbox']",
               );
               checkboxes.forEach((cb) => (cb.checked = false));
@@ -1746,7 +1909,7 @@
                 existingBlockedPeriods.forEach((bp) => {
                   const notesTag = parseFirstOpenHolidayApiTag(bp.notes || "");
                   if (notesTag && notesTag.id !== "") {
-                    const checkbox = previewPubilc.querySelector(
+                    const checkbox = previewPublic.querySelector(
                       `input[type='checkbox'][id='${notesTag.id}']`,
                     );
                     if (checkbox) {
@@ -1759,16 +1922,16 @@
                   "Error checking existing blocked periods:",
                   error,
                 );
-                alert(
+                showDialogWithText(
                   "Error checking existing blocked periods. Please check the console for details.",
                 );
               }
             };
             buttonContainer.appendChild(btn_select_missing);
 
-            previewPubilc.insertBefore(
+            previewPublic.insertBefore(
               buttonContainer,
-              previewPubilc.firstChild.nextSibling,
+              previewPublic.firstChild.nextSibling,
             );
             document
               .getElementById("preview_public_text")
@@ -1778,153 +1941,9 @@
               .getElementById("preview_public_text")
               .classList.remove("hide");
 
-            previewPubilc.textContent = "Error loading public holidays.";
+            previewPublic.textContent = "Error loading public holidays.";
             console.error("Error loading holidays.", e);
           }
-        };
-
-        /**
-         * Show a confirmation dialog before proceeding with the import.
-         * @returns {Promise<boolean>} Resolves to true if the user confirms, false otherwise.
-         */
-        const showImportDialog = function () {
-          return new Promise((resolve) => {
-            const previousFocus = document.activeElement;
-            const previousOverflow = document.body.style.overflow;
-
-            // Hintergrundscrollen deaktivieren
-            document.body.style.overflow = "hidden";
-
-            // Overlay erstellen
-            const overlay = document.createElement("div");
-            overlay.style.cssText = `
-                              position: fixed;
-                              inset: 0;
-                              background: rgba(0,0,0,0.5);
-                              display: flex;
-                              justify-content: center;
-                              align-items: center;
-                              z-index: 9999;
-                            `;
-
-            // Dialog erstellen
-            const dialog = document.createElement("div");
-            dialog.setAttribute("role", "dialog");
-            dialog.setAttribute("aria-modal", "true");
-            dialog.setAttribute("aria-labelledby", "dlgTitle");
-            dialog.setAttribute("aria-describedby", "dlgDescription");
-
-            dialog.style.cssText = `
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    min-width: 300px;
-                    text-align: center;
-                  `;
-
-            dialog.innerHTML = `
-                    <h3 id="dlgTitle">Confirm Holiday Import</h2>
-
-                    <div id="dlgDescription">
-                      <p>The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.</p>
-                      <p>Appointments cannot be scheduled during these blocked periods.</p>
-                      <p><strong>Warning:</strong> Once imported, this operation cannot be reverted automatically.</p>
-                      <p>Are you sure you want to import?</p>
-                    </div>
-
-                    <button type="button" id="dlgImport">Import</button>
-                    <button type="button" id="dlgCancel">Cancel</button>
-                  `;
-
-            overlay.appendChild(dialog);
-            document.body.appendChild(overlay);
-
-            const importBtn = dialog.querySelector("#dlgImport");
-            const cancelBtn = dialog.querySelector("#dlgCancel");
-
-            const closeDialog = (result) => {
-              document.removeEventListener("keydown", onKeyDown);
-
-              // ursprünglichen Scrollzustand wiederherstellen
-              document.body.style.overflow = previousOverflow;
-
-              overlay.remove();
-
-              // Fokus zurückgeben, falls Element noch existiert
-              if (
-                previousFocus &&
-                previousFocus.isConnected &&
-                typeof previousFocus.focus === "function"
-              ) {
-                previousFocus.focus();
-              }
-
-              resolve(result);
-            };
-
-            const onKeyDown = (event) => {
-              // ESC => Cancel
-              if (event.key === "Escape") {
-                event.preventDefault();
-                closeDialog(false);
-                return;
-              }
-
-              // ENTER => aktuell fokussierten Button auslösen
-              if (event.key === "Enter") {
-                const activeElement = document.activeElement;
-
-                if (
-                  activeElement instanceof HTMLButtonElement &&
-                  dialog.contains(activeElement)
-                ) {
-                  event.preventDefault();
-                  activeElement.click();
-                }
-
-                return;
-              }
-
-              // Fokusfalle
-              if (event.key === "Tab") {
-                const focusable = dialog.querySelectorAll(
-                  'button, [href], input, select, textarea, not([tabindex="-1"])',
-                );
-
-                if (!focusable.length) {
-                  return;
-                }
-
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-
-                if (event.shiftKey) {
-                  if (document.activeElement === first) {
-                    event.preventDefault();
-                    last.focus();
-                  }
-                } else if (document.activeElement === last) {
-                  event.preventDefault();
-                  first.focus();
-                }
-              }
-            };
-
-            document.addEventListener("keydown", onKeyDown);
-
-            // Klick außerhalb des Dialogs => Cancel
-            overlay.addEventListener("click", (event) => {
-              if (event.target === overlay) {
-                closeDialog(false);
-              }
-            });
-
-            importBtn.addEventListener("click", () => closeDialog(true));
-            cancelBtn.addEventListener("click", () => closeDialog(false));
-
-            // Initialer Fokus auf Cancel
-            cancelBtn.focus();
-          });
         };
 
         /**
@@ -1934,7 +1953,7 @@
          */
         const doStartImportData = async function () {
           if (!minimumOneDateSelected()) {
-            alert("Please select at least one holiday to import.");
+            showDialogWithText("Please select at least one holiday to import.");
             return;
           }
 
@@ -1995,7 +2014,9 @@
               console.error(error);
 
               console.error("Error posting data to Easy!Appointments:", error);
-              alert(`Import failed: ${error.message || "Unknown error"}`);
+              showDialogWithText(
+                `Import failed: ${error.message || "Unknown error"}`,
+              );
             }
           } finally {
             btnNext.disabled = false;
