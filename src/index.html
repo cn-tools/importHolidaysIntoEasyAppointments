@@ -74,16 +74,25 @@
           dialog.setAttribute("aria-describedby", "dlgDescription");
           dialog.classList.add("dlg_style");
 
-          dialog.innerHTML = `
-              <p id="dlgDescription" class="txt_container">${text}</p>
-              <div class="btn_container">
-                <button type="button" id="dlgOk">OK</button>
-              </div>
-            `;
+          const description = document.createElement("p");
+          description.id = "dlgDescription";
+          description.className = "txt_container";
+          description.textContent = text;
+
+          const btnContainer = document.createElement("div");
+          btnContainer.className = "btn_container";
+
+          const okButton = document.createElement("button");
+          okButton.type = "button";
+          okButton.id = "dlgOk";
+          okButton.textContent = "OK";
+
+          btnContainer.appendChild(okButton);
+
+          dialog.appendChild(description);
+          dialog.appendChild(btnContainer);
 
           document.body.appendChild(dialog);
-
-          const okButton = dialog.querySelector("#dlgOk");
 
           const closeDialog = () => {
             dialog.close();
@@ -127,34 +136,58 @@
           dialog.setAttribute("aria-describedby", "dlgDescription");
           dialog.classList.add("dlg_style");
 
-          dialog.innerHTML = `
-              <h3 id="dlgTitle">Confirm Holiday Import</h3>
+          const title = document.createElement("h3");
+          title.id = "dlgTitle";
+          title.textContent = "Confirm Holiday Import";
 
-              <div id="dlgDescription">
-                <p>
-                  The selected holidays will be imported and corresponding blocked
-                  periods will be created in Easy!Appointments.
-                </p>
-                <p>
-                  Appointments cannot be scheduled during these blocked periods.
-                </p>
-                <p>
-                  <strong>Warning:</strong>
-                  Once imported, this operation cannot be reverted automatically.
-                </p>
-                <p>Are you sure you want to import?</p>
-              </div>
+          const description = document.createElement("div");
+          description.id = "dlgDescription";
 
-              <div class="btn_container">
-                <button type="button" id="dlgImport">Import</button>
-                <button type="button" id="dlgCancel">Cancel</button>
-              </div>
-            `;
+          [
+            "The selected holidays will be imported and corresponding blocked periods will be created in Easy!Appointments.",
+            "Appointments cannot be scheduled during these blocked periods.",
+          ].forEach((text) => {
+            const p = document.createElement("p");
+            p.textContent = text;
+            description.appendChild(p);
+          });
+
+          const warning = document.createElement("p");
+          const strong = document.createElement("strong");
+          strong.textContent = "Warning:";
+          warning.appendChild(strong);
+          warning.appendChild(
+            document.createTextNode(
+              " Once imported, this operation cannot be reverted automatically.",
+            ),
+          );
+          description.appendChild(warning);
+
+          const question = document.createElement("p");
+          question.textContent = "Are you sure you want to import?";
+          description.appendChild(question);
+
+          const btnContainer = document.createElement("div");
+          btnContainer.className = "btn_container";
+
+          const importBtn = document.createElement("button");
+          importBtn.type = "button";
+          importBtn.id = "dlgImport";
+          importBtn.textContent = "Import";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.type = "button";
+          cancelBtn.id = "dlgCancel";
+          cancelBtn.textContent = "Cancel";
+
+          btnContainer.appendChild(importBtn);
+          btnContainer.appendChild(cancelBtn);
+
+          dialog.appendChild(title);
+          dialog.appendChild(description);
+          dialog.appendChild(btnContainer);
 
           document.body.appendChild(dialog);
-
-          const importBtn = dialog.querySelector("#dlgImport");
-          const cancelBtn = dialog.querySelector("#dlgCancel");
 
           const closeDialog = (result) => {
             dialog.close();
