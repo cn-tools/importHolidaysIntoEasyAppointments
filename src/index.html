@@ -59,6 +59,150 @@
       };
 
       /**
+       * Shows a modal information dialog.
+       *
+       * Acts as an alert replacement and always resolves with false.
+       *
+       * @param {string} text Text to display.
+       * @returns {Promise<boolean>} Always resolves to false.
+       */
+      const showDialogWithText = function (text) {
+        return new Promise((resolve) => {
+          const previousFocus = document.activeElement;
+
+          const dialog = document.createElement("dialog");
+          dialog.setAttribute("aria-describedby", "dlgDescription");
+          dialog.classList.add("dlg_style");
+
+          dialog.innerHTML = `
+              <p id="dlgDescription" class="txt_container">${text}</p>
+              <div class="btn_container">
+                <button type="button" id="dlgOk">OK</button>
+              </div>
+            `;
+
+          document.body.appendChild(dialog);
+
+          const okButton = dialog.querySelector("#dlgOk");
+
+          const closeDialog = () => {
+            dialog.close();
+            dialog.remove();
+
+            if (
+              previousFocus &&
+              previousFocus.isConnected &&
+              typeof previousFocus.focus === "function"
+            ) {
+              previousFocus.focus();
+            }
+
+            resolve(false);
+          };
+
+          // ESC
+          dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            closeDialog();
+          });
+
+          // OK
+          okButton.addEventListener("click", closeDialog);
+
+          dialog.showModal();
+          okButton.focus();
+        });
+      };
+
+      /**
+       * Show a confirmation dialog before proceeding with the import.
+       * @returns {Promise<boolean>}
+       */
+      const showImportDialog = function () {
+        return new Promise((resolve) => {
+          const previousFocus = document.activeElement;
+
+          const dialog = document.createElement("dialog");
+          dialog.setAttribute("aria-labelledby", "dlgTitle");
+          dialog.setAttribute("aria-describedby", "dlgDescription");
+          dialog.classList.add("dlg_style");
+
+          dialog.innerHTML = `
+              <h3 id="dlgTitle">Confirm Holiday Import</h3>
+
+              <div id="dlgDescription">
+                <p>
+                  The selected holidays will be imported and corresponding blocked
+                  periods will be created in Easy!Appointments.
+                </p>
+                <p>
+                  Appointments cannot be scheduled during these blocked periods.
+                </p>
+                <p>
+                  <strong>Warning:</strong>
+                  Once imported, this operation cannot be reverted automatically.
+                </p>
+                <p>Are you sure you want to import?</p>
+              </div>
+
+              <div class="btn_container">
+                <button type="button" id="dlgImport">Import</button>
+                <button type="button" id="dlgCancel">Cancel</button>
+              </div>
+            `;
+
+          document.body.appendChild(dialog);
+
+          const importBtn = dialog.querySelector("#dlgImport");
+          const cancelBtn = dialog.querySelector("#dlgCancel");
+
+          const closeDialog = (result) => {
+            dialog.close();
+            dialog.remove();
+
+            if (
+              previousFocus &&
+              previousFocus.isConnected &&
+              typeof previousFocus.focus === "function"
+            ) {
+              previousFocus.focus();
+            }
+
+            resolve(result);
+          };
+
+          // ESC oder backdrop => false
+          dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            closeDialog(false);
+          });
+
+          importBtn.addEventListener("click", () => closeDialog(true));
+          cancelBtn.addEventListener("click", () => closeDialog(false));
+
+          // Modal öffnen
+          dialog.showModal();
+
+          // Initialer Fokus
+          cancelBtn.focus();
+        });
+      };
+
+      /**
+       * Displays an error dialog when an error message is provided.
+       *
+       * @param {string} message - The error message to display.
+       * @returns {boolean} Returns false if an error message was shown; otherwise true.
+       */
+      const showError = function (message) {
+        if (message) {
+          showDialogWithText(message);
+          return false;
+        }
+        return true;
+      };
+
+      /**
        * Recursively add data attributes to an element based on the provided object.
        * @param {HTMLElement} element - The HTML element to which data attributes will be added.
        * @param {string} prefix - The prefix for the data attribute names.
@@ -447,164 +591,6 @@
         const container = document.getElementById("termsofuse");
         const checkboxes = container.querySelectorAll("input[type='checkbox']");
         checkboxes.forEach((cb) => (cb.checked = false));
-      };
-
-      /**
-       * Displays an error message in an dialog.
-       *
-       * @param {string} message - The message to display.
-       * @returns {boolean} Returns false when a message is displayed, otherwise true.
-       */
-      /**
-       * Shows a modal information dialog.
-       *
-       * Acts as an alert replacement and always resolves with false.
-       *
-       * @param {string} text Text to display.
-       * @returns {Promise<boolean>} Always resolves to false.
-       */
-      const showDialogWithText = function (text) {
-        return new Promise((resolve) => {
-          const previousFocus = document.activeElement;
-
-          const dialog = document.createElement("dialog");
-
-          dialog.style.cssText = `
-              padding: 20px;
-              border: none;
-              border-radius: 8px;
-              min-width: 300px;
-              max-width: 500px;
-              box-shadow: 0 8px 30px rgba(0,0,0,.3);
-              text-align: center;
-            `;
-
-          dialog.innerHTML = `
-              <p style="margin-bottom: 20px;">${text}</p>
-              <button type="button" id="dlgOk">OK</button>
-            `;
-
-          document.body.appendChild(dialog);
-
-          const okButton = dialog.querySelector("#dlgOk");
-
-          const closeDialog = () => {
-            dialog.close();
-            dialog.remove();
-
-            if (
-              previousFocus &&
-              previousFocus.isConnected &&
-              typeof previousFocus.focus === "function"
-            ) {
-              previousFocus.focus();
-            }
-
-            resolve(false);
-          };
-
-          // ESC
-          dialog.addEventListener("cancel", (event) => {
-            event.preventDefault();
-            closeDialog();
-          });
-
-          // OK
-          okButton.addEventListener("click", closeDialog);
-
-          dialog.showModal();
-          okButton.focus();
-        });
-      };
-
-      /**
-       * Show a confirmation dialog before proceeding with the import.
-       * @returns {Promise<boolean>}
-       */
-      const showImportDialog = function () {
-        return new Promise((resolve) => {
-          const previousFocus = document.activeElement;
-
-          const dialog = document.createElement("dialog");
-          dialog.setAttribute("aria-labelledby", "dlgTitle");
-          dialog.setAttribute("aria-describedby", "dlgDescription");
-
-          dialog.style.cssText = `
-              padding: 20px;
-              border: none;
-              border-radius: 8px;
-              min-width: 400px;
-              text-align: center;
-              box-shadow: 0 8px 30px rgba(0,0,0,.3);
-            `;
-
-          dialog.innerHTML = `
-              <h3 id="dlgTitle">Confirm Holiday Import</h3>
-
-              <div id="dlgDescription">
-                <p>
-                  The selected holidays will be imported and corresponding blocked
-                  periods will be created in Easy!Appointments.
-                </p>
-                <p>
-                  Appointments cannot be scheduled during these blocked periods.
-                </p>
-                <p>
-                  <strong>Warning:</strong>
-                  Once imported, this operation cannot be reverted automatically.
-                </p>
-                <p>Are you sure you want to import?</p>
-              </div>
-
-              <div style="display:flex; gap:10px; justify-content:center;">
-                <button type="button" id="dlgImport">Import</button>
-                <button type="button" id="dlgCancel">Cancel</button>
-              </div>
-            `;
-
-          document.body.appendChild(dialog);
-
-          const importBtn = dialog.querySelector("#dlgImport");
-          const cancelBtn = dialog.querySelector("#dlgCancel");
-
-          const closeDialog = (result) => {
-            dialog.close();
-            dialog.remove();
-
-            if (
-              previousFocus &&
-              previousFocus.isConnected &&
-              typeof previousFocus.focus === "function"
-            ) {
-              previousFocus.focus();
-            }
-
-            resolve(result);
-          };
-
-          // ESC oder backdrop => false
-          dialog.addEventListener("cancel", (event) => {
-            event.preventDefault();
-            closeDialog(false);
-          });
-
-          importBtn.addEventListener("click", () => closeDialog(true));
-          cancelBtn.addEventListener("click", () => closeDialog(false));
-
-          // Modal öffnen
-          dialog.showModal();
-
-          // Initialer Fokus
-          cancelBtn.focus();
-        });
-      };
-
-      const showError = function (message) {
-        if (message) {
-          showDialogWithText(message);
-          return false;
-        }
-        return true;
       };
 
       /**
@@ -1134,6 +1120,27 @@
       dialog::backdrop {
         background: rgba(0, 0, 0, 0.5);
       }
+
+      dialog.dlg_style {
+        padding: 20px;
+        border: none;
+        border-radius: 8px;
+        min-width: 50vw;
+        max-width: 90vw;
+        max-height: 90vh;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+      }
+
+      dialog .txt_container {
+        margin-bottom: 20px;
+      }
+
+      dialog .btn_container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
     </style>
   </head>
   <body>
@@ -1369,12 +1376,20 @@
         rel="noopener noreferrer"
         >MIT License</a
       >
-      <br /><span>Version: {{current_version_number}} | </span
-      ><span>Timestamp: {{current_timestamp}}</span
-      ><span id="newversionavailable" class="new-version hide">
+      <br /><span>Version: {{current_version_number}} | </span>
+      <span>Timestamp: {{current_timestamp}} | </span>
+      <span>
+        <a
+          href="https://github.com/cn-tools/importHolidaysIntoEasyAppointments/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Bugtacker</a
+        >
+      </span>
+      <span id="newversionavailable" class="new-version hide">
         |
         <a
-          href="https://github.com/cn-tools/importHolidaysIntoEasyAppointments"
+          href="https://github.com/cn-tools/importHolidaysIntoEasyAppointments/releases"
           target="_blank"
           rel="noopener noreferrer"
           >New version available!</a
