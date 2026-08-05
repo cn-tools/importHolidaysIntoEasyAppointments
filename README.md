@@ -2,8 +2,6 @@
 
 A small web-based utility to import holiday data into the [Easy!Appointments](https://easyappointments.org/) scheduling system.
 
-> ⚠️ **Notice**: This project is in active development!
-
 ## Overview
 
 This project provides a simple frontend and backend to load holiday definitions and import them into your installed version of Easy!Appointments as blocked periods.
@@ -20,13 +18,34 @@ This project provides a simple frontend and backend to load holiday definitions 
 
 Use the hosted interface directly at [https://cn-tools.github.io/importHolidaysIntoEasyAppointments/](https://cn-tools.github.io/importHolidaysIntoEasyAppointments/) hosted by Github Pages.
 
+> **⚠️ Since Easy!Appointments v1.6.0**, a stricter CORS check is active.\
+Please therefore check the options listed below.
+
 ## CORS
 
 When using the hosted interface from GitHub Pages, CORS (Cross-Origin Resource Sharing) issues may occur when trying to communicate with your Easy!Appointments installation. To resolve this:
 
-- Ensure your Easy!Appointments server is accessible and properly configured to accept requests from the GitHub Pages domain
-- Consider running the application locally instead (clone the repository and open `index.html` locally)
-- Alternatively, deploy this tool on the same domain as your Easy!Appointments installation to avoid CORS restrictions
+#### Option 1 (recommended)
+
+ To avoid CORS restrictions, install this tool on the same domain as your Easy!Appointments installation. To do this, download the latest [version](https://github.com/cn-tools/importHolidaysIntoEasyAppointments/releases) and upload the `index.html` file from folder `src` to the same domain as your Easy!Appointments installation. If necessary, rename the `index.html` file to prevent overwriting an existing one. Then, open your preferred browser, go to the corresponding page, and follow the instructions in the wizard.
+
+#### Option 2
+
+To use the application directly from GitHub Pages, your Easy!Appointments instance must allow cross-origin requests from `https://cn-tools.github.io`
+
+Configure `CORS_ALLOWED_ORIGINS` accordingly and ensure that CORS preflight requests (`OPTIONS`) are handled correctly. The server must allow at least the following:
+
+- Origin: `https://cn-tools.github.io`
+- Headers: `Authorization`, `Content-Type`
+- Methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
+
+Example response headers:
+
+```http
+Access-Control-Allow-Origin: https://cn-tools.github.io
+Access-Control-Allow-Headers: Authorization, Content-Type
+Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+```
 
 ---
 
