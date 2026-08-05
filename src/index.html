@@ -766,12 +766,11 @@
         text-align: right;
       }
       main {
-        width: 100%;
-        max-width: var(--maxw);
+        width: min(100%, var(--maxw));
         background: #fff;
         border-radius: 8px;
         padding: 18px;
-        margin: 12px;
+        margin: 12px auto;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       }
       .row {
@@ -795,6 +794,7 @@
         display: flex;
         gap: 8px;
         justify-content: flex-end;
+        flex-wrap: wrap;
         margin-top: 12px;
       }
       footer {
@@ -804,6 +804,8 @@
         text-align: center;
         color: #666;
         font-size: 13px;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
       .step {
         display: none;
@@ -817,7 +819,7 @@
       }
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
         gap: 12px;
       }
       .secondary {
@@ -846,12 +848,28 @@
         border-radius: 6px;
         overflow: auto;
       }
-      @media (max-width: 520px) {
-        header {
-          padding: 12px;
+      @media (max-width: 768px) {
+        main {
+          padding: 14px;
         }
+
+        .controls {
+          justify-content: stretch;
+        }
+
+        .controls button {
+          flex: 1;
+        }
+      }
+
+      @media (max-width: 480px) {
         h1 {
-          font-size: 16px;
+          font-size: 15px;
+        }
+
+        .step-circle {
+          width: 24px;
+          height: 24px;
         }
       }
 
@@ -901,8 +919,8 @@
         background-color: #fff;
         color: #333;
         border-radius: 50%;
-        height: 35px;
-        width: 35px;
+        width: clamp(24px, 5vw, 35px);
+        height: clamp(24px, 5vh, 35px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -932,6 +950,7 @@
         display: flex;
         align-items: flex-start;
         margin-bottom: 20px;
+        width: 100%;
       }
 
       .checkboxes .checkbox-item:last-child {
@@ -1032,9 +1051,15 @@
 
       /*-- design for input[date, url, password] and select --*/
       select,
+      input {
+        min-height: 44px;
+      }
+
+      select,
       input[type="date"],
       input[type="url"],
       input[type="password"] {
+        width: 100%;
         padding: var(--field-padding);
         border: 2px solid var(--field-border);
         border-radius: var(--field-radius);
@@ -1083,6 +1108,13 @@
         background: #f5f5f5;
       }
 
+      #previewPubilcButtons {
+        display: flex;
+        flex-wrap: wrap;
+        flex: 1 1 100%;
+        gap: 8px;
+      }
+
       /*-- design for buttons --*/
       button {
         padding: var(--btn-padding);
@@ -1094,6 +1126,7 @@
         font-weight: 600;
         box-shadow: var(--btn-shadow);
         transition: all var(--cbx_transition-speed) ease;
+        min-height: 44px;
       }
 
       /* Hover */
@@ -1158,7 +1191,8 @@
         padding: 20px;
         border: none;
         border-radius: 8px;
-        min-width: 50vw;
+        width: min(600px, 95vw);
+        min-width: auto;
         max-width: 90vw;
         max-height: 90vh;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
